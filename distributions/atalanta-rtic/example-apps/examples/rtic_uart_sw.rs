@@ -24,7 +24,7 @@ mod app {
         let mut timer = Timer::init::<TIMER0_ADDR>().into_periodic();
 
         sprintln!("init");
-        timer.set_period(10_u32.micros());
+        timer.set_period(50_u32.micros());
         timer.start();
 
         Shared { uart }
