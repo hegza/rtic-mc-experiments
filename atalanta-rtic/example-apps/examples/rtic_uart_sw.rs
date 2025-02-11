@@ -39,15 +39,13 @@ mod app {
 
         fn exec(&mut self) {
             self.shared().uart.lock(|_uart| {
-                sprintln!("T");
-                sprintln!("1");
+                sprintln!("T1");
             });
 
             Sw1::spawn(()).unwrap();
 
             self.shared().uart.lock(|_uart| {
-                sprintln!("T");
-                sprintln!("2");
+                sprintln!("T2");
             });
         }
     }
