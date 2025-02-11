@@ -96,7 +96,7 @@ pub mod app {
     /// Core local interrupt pending
     #[doc(hidden)]
     #[inline]
-    pub fn __rtic_sc_pend<T: rtic::export::InterruptNumber>(irq_nbr: T) {
+    pub fn __rtic_sc_pend<T: rtic::export::AbstractInterrupt>(irq_nbr: T) {
         rtic::export::pend(irq_nbr);
     }
     /// ====================================

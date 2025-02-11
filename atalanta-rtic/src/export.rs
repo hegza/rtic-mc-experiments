@@ -18,7 +18,7 @@ pub mod interrupts {
 pub use bsp::riscv::interrupt::machine::{
     disable as interrupt_disable, enable as interrupt_enable,
 };
-pub use bsp::{clic::InterruptNumber, Interrupt};
+pub use bsp::Interrupt;
 
 /// Lock implementation using threshold and global Critical Section (CS)
 ///
@@ -51,16 +51,16 @@ pub unsafe fn lock<T, R>(ptr: *mut T, priority: u8, ceiling: u8, f: impl FnOnce(
 }
 
 /// Sets the given software interrupt as pending
-pub fn pend<T: InterruptNumber>(irq: T) {
+pub fn pend<T: AbstractInterrupt>(irq: T) {
     unsafe { Clic::ip(irq).pend() };
 }
 
 /// Sets the given software interrupt as not pending
-pub fn unpend<T: InterruptNumber>(irq: T) {
+pub fn unpend<T: AbstractInterrupt>(irq: T) {
     unsafe { Clic::ip(irq).unpend() };
 }
 
-pub fn enable<T: InterruptNumber>(irq: T, level: u8) {
+pub fn enable<T: AbstractInterrupt>(irq: T, level: u8) {
     Clic::attr(irq).set_trig(Trig::Edge);
     Clic::attr(irq).set_polarity(Polarity::Pos);
     Clic::attr(irq).set_shv(true);
