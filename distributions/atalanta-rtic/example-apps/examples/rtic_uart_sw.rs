@@ -44,7 +44,8 @@ mod app {
                 sprintln!("1");
             });
 
-            Sw1::spawn(()).unwrap();
+            // ???: unwrap on this occasionally panics
+            Sw1::spawn(()).ok();
 
             self.shared().uart.lock(|_uart| {
                 sprintln!("T");
