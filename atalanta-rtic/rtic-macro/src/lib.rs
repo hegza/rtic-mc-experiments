@@ -11,7 +11,7 @@ struct AtalantaRtic;
 
 use rtic_sw_pass::SoftwarePass;
 
-const MIN_TASK_PRIORITY: u16 = 0; // lowest Atalanta priority
+const MIN_TASK_PRIORITY: u16 = 1; // lowest Atalanta priority
 
 #[proc_macro_attribute]
 pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
