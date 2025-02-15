@@ -5,7 +5,8 @@
 mod app {
     use bsp::embedded_io::Write;
     use bsp::fugit::ExtU32;
-    use bsp::timer_group::Timer0;
+    use bsp::mmap::apb_timer::TIMER0_ADDR;
+    use bsp::timer_group::Timer;
     use bsp::uart::ApbUart;
     use bsp::Interrupt::{self};
     use bsp::{sprintln, CPU_FREQ};
@@ -19,7 +20,7 @@ mod app {
     #[init]
     fn init() -> Shared {
         let uart = ApbUart::init(CPU_FREQ, 115_200);
-        let mut timer = Timer0::init().into_periodic();
+        let mut timer = Timer::init::<TIMER0_ADDR>().into_periodic();
 
         sprintln!("init");
         timer.set_period(10_u32.micros());

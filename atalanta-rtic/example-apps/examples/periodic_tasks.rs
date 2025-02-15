@@ -11,10 +11,11 @@ mod app {
     use bsp::{
         clic::{Clic, Polarity, Trig},
         embedded_io::Write,
+        mmap::apb_timer::{TIMER0_ADDR, TIMER1_ADDR, TIMER2_ADDR, TIMER3_ADDR},
         mtimer::{self, MTimer},
         riscv, sprint, sprintln,
         tb::signal_pass,
-        timer_group::{Timer0, Timer1, Timer2, Timer3},
+        timer_group::Timer,
         uart::*,
         Interrupt, CPU_FREQ,
     };
@@ -123,10 +124,10 @@ mod app {
         let mut mtimer = MTimer::instance().into_oneshot();
 
         let mut timers = (
-            Timer0::init(),
-            Timer1::init(),
-            Timer2::init(),
-            Timer3::init(),
+            Timer::init::<TIMER0_ADDR>(),
+            Timer::init::<TIMER1_ADDR>(),
+            Timer::init::<TIMER2_ADDR>(),
+            Timer::init::<TIMER3_ADDR>(),
         );
 
         timers.0.set_cmp(TASK0.period_us * CYCLES_PER_US as u32);
@@ -249,10 +250,10 @@ mod app {
                 timer.set_counter(u64::MAX);
 
                 // Disable all timers & interrupts, so no more instances will fire
-                Timer0::instance().disable();
-                Timer1::instance().disable();
-                Timer2::instance().disable();
-                Timer3::instance().disable();
+                Timer::instance::<TIMER0_ADDR>().disable();
+                Timer::instance::<TIMER1_ADDR>().disable();
+                Timer::instance::<TIMER2_ADDR>().disable();
+                Timer::instance::<TIMER3_ADDR>().disable();
                 Clic::ip(Interrupt::MachineTimer).unpend();
                 Clic::ip(Interrupt::Timer0Cmp).unpend();
                 Clic::ip(Interrupt::Timer1Cmp).unpend();
