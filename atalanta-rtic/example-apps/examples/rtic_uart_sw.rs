@@ -6,8 +6,9 @@ mod app {
     use bsp::{
         fugit::ExtU32,
         led::{self, Led},
+        mmap::apb_timer::TIMER0_ADDR,
         sprintln,
-        timer_group::Timer0,
+        timer_group::Timer,
         uart::ApbUart,
         CPU_FREQ,
     };
@@ -20,7 +21,7 @@ mod app {
     #[init]
     fn init() -> Shared {
         let uart = ApbUart::init(CPU_FREQ, 115_200);
-        let mut timer = Timer0::init().into_periodic();
+        let mut timer = Timer::init::<TIMER0_ADDR>().into_periodic();
 
         sprintln!("init");
         timer.set_period(50_u32.micros());

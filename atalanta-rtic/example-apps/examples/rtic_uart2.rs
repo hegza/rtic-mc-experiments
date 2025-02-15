@@ -3,7 +3,10 @@
 
 #[rtic::app(device = bsp)]
 mod app {
-    use bsp::{fugit::ExtU32, sprintln, timer_group::Timer0, uart::ApbUart, Interrupt, CPU_FREQ};
+    use bsp::{
+        fugit::ExtU32, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer, uart::ApbUart,
+        Interrupt, CPU_FREQ,
+    };
 
     #[shared]
     struct Shared {
@@ -13,7 +16,7 @@ mod app {
     #[init]
     fn init() -> Shared {
         let uart = ApbUart::init(CPU_FREQ, 115_200);
-        let mut timer = Timer0::init().into_periodic();
+        let mut timer = Timer::init::<TIMER0_ADDR>().into_periodic();
 
         sprintln!("init");
         timer.set_period(10_u32.micros());
@@ -28,7 +31,7 @@ mod app {
     impl RticTask for Task1 {
         fn init() -> Self {
             let _uart = ApbUart::init(CPU_FREQ, 115_200);
-            let mut timer = Timer0::init().into_periodic();
+            let mut timer = Timer::init::<TIMER0_ADDR>().into_periodic();
 
             sprintln!("init");
             timer.set_period(10_u32.micros());

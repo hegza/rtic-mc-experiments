@@ -5,7 +5,10 @@
 mod app {
     use core::arch::asm;
 
-    use bsp::{fugit::ExtU32, sprintln, timer_group::Timer0, uart::ApbUart, CPU_FREQ};
+    use bsp::{
+        fugit::ExtU32, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer, uart::ApbUart,
+        CPU_FREQ,
+    };
 
     #[shared]
     struct Shared {
@@ -39,7 +42,7 @@ mod app {
             let _uart = ApbUart::init(CPU_FREQ, 115_200);
             sprintln!("init");
 
-            let mut timer = Timer0::init().into_periodic();
+            let mut timer = Timer::init::<TIMER0_ADDR>().into_periodic();
             timer.set_period(50.micros());
             timer.start();
 
