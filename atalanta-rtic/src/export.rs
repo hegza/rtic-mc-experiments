@@ -10,7 +10,7 @@ pub use rtic_sw_pass::export::*;
 pub use bsp::clic::InterruptNumber as AbstractInterrupt; // a trait that abstracts an interrupt type
 
 /// Re-exports needed from the code generation in internal rtic-macro crate
-pub use crate::mintthresh;
+pub use bsp::register::mintthresh;
 
 pub mod interrupts {
     pub use bsp::Interrupt::*;
@@ -39,10 +39,13 @@ pub use bsp::Interrupt;
 #[inline(always)]
 pub unsafe fn lock<T, R>(ptr: *mut T, priority: u8, ceiling: u8, f: impl FnOnce(&mut T) -> R) -> R {
     if priority < ceiling {
-        let current = mintthresh::Bits::read();
-        mintthresh::Bits::write(ceiling.into());
+        // Save mintthresh
+        let current = mintthresh::write((ceiling as usize).into());
+
         let r = f(&mut *ptr);
-        mintthresh::Bits::write(current.into());
+
+        // Restore mintthresh
+        mintthresh::write((current as usize).into());
 
         r
     } else {
