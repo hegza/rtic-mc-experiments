@@ -12,7 +12,6 @@ bench = false
 rtic-macro = { path = "rtic-macro" }
 rtic-sw-pass = { path = "../compilation_passes/rtic-sw-pass", default-features = false }
 rtic-deadline-pass = { path = "../compilation_passes/rtic-deadline-pass", default-features = false }
-hippomenes-derive = { package = "hippomenes-derive", path = "../hippomenes-core/hippomenes-derive" }
 bsp = { package = "atalanta_bsp", path = "../Atalanta/examples/atalanta_bsp" }
 
 [features]
