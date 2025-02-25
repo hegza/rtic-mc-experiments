@@ -111,13 +111,6 @@ mod app {
             TEST_DURATION.to_nanos()
         );
 
-        // Pre-enable interrupts; required for behavior match
-        rtic::export::enable(Interrupt::Timer0Cmp, TASK0.level);
-        rtic::export::enable(Interrupt::Timer1Cmp, TASK1.level);
-        rtic::export::enable(Interrupt::Timer2Cmp, TASK2.level);
-        rtic::export::enable(Interrupt::Timer3Cmp, TASK3.level);
-        rtic::export::enable(Interrupt::MachineTimer, u8::MAX);
-
         if USE_PCS {
             Clic::ie(Interrupt::Timer0Cmp).set_pcs(true);
             Clic::ie(Interrupt::Timer1Cmp).set_pcs(true);
@@ -157,9 +150,6 @@ mod app {
 
         // Start periodic timers
         timers.iter_mut().for_each(Periodic::start);
-
-        // Pre-enable interrupts; required for behavior match
-        unsafe { riscv::interrupt::enable() };
 
         Shared {}
     }
