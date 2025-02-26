@@ -240,7 +240,6 @@ name = "rtic"
 version = "0.1.0"
 dependencies = [
  "atalanta-bsp",
- "rtic-deadline-pass",
  "rtic-macro",
  "rtic-sw-pass",
 ]
@@ -259,24 +258,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "rtic-deadline-pass"
-version = "0.1.0"
-dependencies = [
- "heck 0.5.0",
- "proc-macro2",
- "quote",
- "rtic-core",
- "syn 2.0.66",
-]
-
-[[package]]
 name = "rtic-macro"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
  "rtic-core",
- "rtic-deadline-pass",
  "rtic-sw-pass",
  "syn 2.0.66",
 ]
