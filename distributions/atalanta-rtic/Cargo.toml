@@ -14,5 +14,6 @@ rtic-sw-pass = { path = "../../compilation_passes/rtic-sw-pass", default-feature
 bsp = { package = "atalanta-bsp", path = "../Atalanta/examples/atalanta-bsp" }
 
 [features]
+pcs-pass = ["rtic-macro/pcs-pass"]
 fpga = ["bsp/fpga"]
 rtl-tb = ["bsp/rtl-tb"]
