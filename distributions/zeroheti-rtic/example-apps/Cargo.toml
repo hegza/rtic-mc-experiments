@@ -1,0 +1,26 @@
+[package]
+name = "zeroheti_rtic_examples"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rtic = { path = "../" }
+bsp = { package = "zeroheti-bsp", git = "https://github.com/ANurmi/zeroHETI.git", features = [
+    "rt",
+] }
+ufmt = { version = "0.2.0", optional = true }
+fugit = "0.3.7"
+
+[profile.dev]
+codegen-units = 1
+opt-level = "s"
+
+[profile.release]
+debug = true
+opt-level = "s"
+
+[features]
+default = []
+fpga = ["bsp/fpga"]
+rtl-tb = ["bsp/rtl-tb"]
+ufmt = ["dep:ufmt", "bsp/ufmt"]
