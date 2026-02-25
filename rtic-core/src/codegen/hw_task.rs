@@ -140,7 +140,9 @@ impl HardwareTask {
         Some(quote! {
             #cfg_core
             #[allow(non_snake_case)]
-            #[unsafe(no_mangle)]
+            // HACK: no_mangle is incompatible with interrupt attribute of
+            // zeroHETI distribution
+            // #[unsafe(no_mangle)]
             #(#task_attrs)*
             fn #task_irq_handler() {
                 #task_dispatch_call
