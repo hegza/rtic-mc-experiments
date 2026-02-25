@@ -38,6 +38,17 @@ impl CorePassBackend for ZeroHetiRtic {
     ) -> Option<TokenStream2> {
         let mut out = TokenStream2::new();
 
+        // Append general interrupt controller initialization
+        out.extend(quote! {
+            // Use 8 bits for level. Omitting this will cause the hardware to not respect interrupt
+            // level.
+            #[cfg(feature = "intc-clic")]
+            bsp::clic::Clic::smclicconfig().set_mnlbits(8);
+
+            // HACK: clear mintstatus
+            unsafe { bsp::register::mintstatus::write(0.into()) };
+        });
+
         // Append dispatchers
         let init_dispatcher_interrupts =
             app_analysis.used_irqs.iter().map(|(irq_name, priority)| {
