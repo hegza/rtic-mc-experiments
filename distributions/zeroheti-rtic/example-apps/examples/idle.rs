@@ -1,12 +1,14 @@
 #![no_std]
 #![no_main]
 
+use bsp::rt as _;
+
 #[rtic::app(device = bsp)]
 mod app {
     use core::arch::asm;
 
     use bsp::{
-        CPU_FREQ_HZ, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer, uart::ApbUart,
+        CPU_FREQ_HZ, apb_uart::ApbUart, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer,
     };
     use fugit::ExtU32;
 

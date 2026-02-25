@@ -10,14 +10,19 @@ mod app {
 
     use bsp::{
         CPU_FREQ_HZ,
+        apb_uart::ApbUart,
+        clic::{Clic, Polarity, Trig},
         embedded_io::Write,
         mmap::apb_timer::{TIMER0_ADDR, TIMER1_ADDR, TIMER2_ADDR, TIMER3_ADDR},
         mtimer::{self, MTimer},
-        riscv, sprint, sprintln,
+        riscv::{self},
+        rt::InterruptNumber,
+        sprintln,
         tb::signal_pass,
         timer_group::{Periodic, Timer},
     };
     use fugit::ExtU32;
+    use rtic::export::{CoreInterrupt, ExternalInterrupt};
 
     #[shared]
     struct Shared {}
@@ -79,17 +84,8 @@ mod app {
 
     #[init]
     fn init() -> Shared {
-        // Assert that periph clk div is as configured
-        // !!!: this must be done prior to configuring any timing sensitive
-        // peripherals
-        write_u32(CFG_BASE + PERIPH_CLK_DIV_OFS, PERIPH_CLK_DIV as u32);
-
         let mut serial = ApbUart::init(CPU_FREQ_HZ, 115_200);
         sprintln!("[periodic_tasks]");
-        sprintln!(
-            "Periph CLK div = {}",
-            read_u32(CFG_BASE + PERIPH_CLK_DIV_OFS)
-        );
         sprintln!(
             "Tasks: \r\n  {:?}\r\n  {:?}\r\n  {:?}\r\n  {:?}",
             TASK0,
@@ -242,23 +238,23 @@ mod app {
                 Timer::instance::<TIMER1_ADDR>().disable();
                 Timer::instance::<TIMER2_ADDR>().disable();
                 Timer::instance::<TIMER3_ADDR>().disable();
-                Clic::ip(Interrupt::MachineTimer).unpend();
-                Clic::ip(Interrupt::Timer0Cmp).unpend();
-                Clic::ip(Interrupt::Timer1Cmp).unpend();
-                Clic::ip(Interrupt::Timer2Cmp).unpend();
-                Clic::ip(Interrupt::Timer3Cmp).unpend();
+                Clic::ip(CoreInterrupt::MachineTimer).unpend();
+                Clic::ip(ExternalInterrupt::Timer0Cmp).unpend();
+                Clic::ip(ExternalInterrupt::Timer1Cmp).unpend();
+                Clic::ip(ExternalInterrupt::Timer2Cmp).unpend();
+                Clic::ip(ExternalInterrupt::Timer3Cmp).unpend();
             }
 
             // Clean up (RTIC won't do this for us unfortunately)
-            tear_irq(Interrupt::Timer0Cmp);
-            tear_irq(Interrupt::Timer1Cmp);
-            tear_irq(Interrupt::Timer2Cmp);
-            tear_irq(Interrupt::Timer3Cmp);
-            tear_irq(Interrupt::MachineTimer);
-            Clic::ie(Interrupt::Timer0Cmp).set_pcs(false);
-            Clic::ie(Interrupt::Timer1Cmp).set_pcs(false);
-            Clic::ie(Interrupt::Timer2Cmp).set_pcs(false);
-            Clic::ie(Interrupt::Timer3Cmp).set_pcs(false);
+            tear_irq(ExternalInterrupt::Timer0Cmp);
+            tear_irq(ExternalInterrupt::Timer1Cmp);
+            tear_irq(ExternalInterrupt::Timer2Cmp);
+            tear_irq(ExternalInterrupt::Timer3Cmp);
+            tear_irq(CoreInterrupt::MachineTimer);
+            Clic::ie(ExternalInterrupt::Timer0Cmp).set_pcs(false);
+            Clic::ie(ExternalInterrupt::Timer1Cmp).set_pcs(false);
+            Clic::ie(ExternalInterrupt::Timer2Cmp).set_pcs(false);
+            Clic::ie(ExternalInterrupt::Timer3Cmp).set_pcs(false);
 
             let mut serial = unsafe { ApbUart::instance() };
 
@@ -297,7 +293,7 @@ mod app {
     }
 
     /// Tear down the IRQ configuration to avoid side-effects for further testing
-    pub fn tear_irq(irq: Interrupt) {
+    pub fn tear_irq(irq: impl InterruptNumber) {
         Clic::ie(irq).disable();
         Clic::ctl(irq).set_level(0x0);
         Clic::attr(irq).set_shv(false);

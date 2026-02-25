@@ -1,12 +1,14 @@
 #![no_std]
 #![no_main]
 
-#[rtic::app(device = bsp)]
-mod app {
+use bsp::rt as _;
+
+#[rtic::app(device=bsp, dispatchers = [Interrupt2, Interrupt3])]
+mod appij {
     use bsp::{
-        CPU_FREQ_HZ, fugit::ExtU32, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer,
-        uart::ApbUart, ufmt,
+        CPU_FREQ_HZ, apb_uart::ApbUart, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer,
     };
+    use fugit::ExtU32;
     #[shared]
     struct Shared {
         dummy: bool,
