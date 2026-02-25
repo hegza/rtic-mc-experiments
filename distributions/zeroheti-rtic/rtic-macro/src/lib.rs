@@ -7,15 +7,15 @@ use syn::{ItemFn, parse_quote};
 
 extern crate proc_macro;
 
-struct AtalantaRtic;
+struct ZeroHetiRtic;
 
 use rtic_sw_pass::SoftwarePass;
 
-const MIN_TASK_PRIORITY: u16 = 1; // lowest Atalanta priority
+const MIN_TASK_PRIORITY: u16 = 1; // lowest zeroHETI priority
 
 #[proc_macro_attribute]
 pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
-    let mut builder = RticMacroBuilder::new(AtalantaRtic);
+    let mut builder = RticMacroBuilder::new(ZeroHetiRtic);
 
     // use the standard software pass provided by rtic-sw-pass crate
     let sw_pass = SoftwarePass::new(SwPassBackend);
@@ -25,7 +25,7 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
 }
 
 // =========================================== Trait implementations ===================================================
-impl CorePassBackend for AtalantaRtic {
+impl CorePassBackend for ZeroHetiRtic {
     fn default_task_priority(&self) -> u16 {
         MIN_TASK_PRIORITY
     }
@@ -132,9 +132,7 @@ impl CorePassBackend for AtalantaRtic {
     }
 
     fn task_attrs(&self) -> Vec<syn::Attribute> {
-        //vec![syn::parse_quote!(#[bsp::nested_interrupt])]
-        // TODO: how to denote a nested interrupt handler on zeroHETI?
-        todo!("nested interrupt handling")
+        vec![syn::parse_quote!(#[bsp::nested_interrupt])]
     }
 }
 
