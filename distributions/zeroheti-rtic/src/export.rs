@@ -1,11 +1,13 @@
 #![allow(clippy::inline_always)]
 
-use bsp::hetic::{Hetic, Pol, Trig};
+pub use bsp::Peripherals;
+pub use bsp::riscv_pac::InterruptNumber;
 
 /// Distribution crate must re-export the `export` module from all the used compilation passes
 pub use rtic_sw_pass::export::*;
 
 /// Exports required by core-pass
+#[cfg(feature = "intc-hetic")]
 pub use bsp::hetic::InterruptNumber; // a trait that abstracts an interrupt type
 
 /// Re-exports needed from the code generation in internal rtic-macro crate
@@ -16,6 +18,7 @@ pub mod interrupts {
     pub use bsp::interrupt::ExternalInterrupt::*;
 }
 pub use bsp::interrupt::{CoreInterrupt, ExternalInterrupt};
+pub use bsp::nested_interrupt;
 pub use bsp::riscv::interrupt::machine::{
     disable as interrupt_disable, enable as interrupt_enable,
 };
@@ -55,19 +58,55 @@ pub unsafe fn lock<T, R>(ptr: *mut T, priority: u8, ceiling: u8, f: impl FnOnce(
 
 /// Sets the given software interrupt as pending
 pub fn pend<T: InterruptNumber>(irq: T) {
-    Hetic::line(irq.number()).pend();
+    #[cfg(feature = "intc-clic")]
+    unsafe {
+        bsp::clic::CLIC::ip(irq).pend()
+    };
+    #[cfg(feature = "intc-hetic")]
+    bsp::hetic::Hetic::line(irq.number()).pend();
+    #[cfg(feature = "intc-edfic")]
+    bsp::edfic::Edfic::line(irq.number()).pend();
 }
 
 /// Sets the given software interrupt as not pending
 pub fn unpend<T: InterruptNumber>(irq: T) {
-    Hetic::line(irq.number()).unpend();
+    #[cfg(feature = "intc-clic")]
+    unsafe {
+        bsp::clic::CLIC::ip(irq).unpend()
+    };
+    #[cfg(feature = "intc-hetic")]
+    bsp::hetic::Hetic::line(irq.number()).unpend();
+    #[cfg(feature = "intc-edfic")]
+    bsp::edfic::Edfic::line(irq.number()).unpend();
 }
 
 pub fn enable<T: InterruptNumber>(irq: T, level: u8) {
-    let mut line = Hetic::line(irq.number());
+    #[cfg(feature = "intc-clic")]
+    {
+        use bsp::clic::{Clic, Polarity, Trig};
 
-    line.set_trig(Trig::Edge);
-    line.set_pol(Pol::Pos);
-    line.set_level(level);
-    line.enable();
+        Clic::attr(irq).set_trig(Trig::Edge);
+        Clic::attr(irq).set_polarity(Polarity::Pos);
+        Clic::attr(irq).set_shv(true);
+        Clic::ctl(irq).set_level(level);
+        unsafe { Clic::ie(irq).enable() };
+    }
+    #[cfg(feature = "intc-hetic")]
+    {
+        use bsp::hetic::Hetic;
+
+        Hetic::line(irq.number()).set_level_prio(level);
+        Hetic::line(irq.number()).enable();
+    }
+    #[cfg(feature = "intc-edfic")]
+    {
+        use bsp::edfic::{Edfic, Pol, Trig};
+
+        Edfic::line(irq.number()).set_pol(Pol::Pos);
+        Edfic::line(irq.number()).set_trig(Trig::Edge);
+        Edfic::line(irq.number()).enable();
+        // HACK: level parameter sets deadline. ??? :D maybe fix using a
+        // compiler pass for crazy hardware or something.
+        Edfic::line(irq.number()).set_dl(level);
+    }
 }
