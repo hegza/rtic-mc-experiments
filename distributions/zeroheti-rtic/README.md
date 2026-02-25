@@ -1,3 +1,3 @@
-# Atalanta RTIC
+# zeroHETI RTIC
 
-RTIC backend implementation for the Atalanta RISC-V RT soft-core.
+RTIC backend implementation for the zeroHETI RISC-V RT soft-core.
