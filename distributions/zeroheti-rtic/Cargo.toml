@@ -12,7 +12,7 @@ bench = false
 rtic-macro = { path = "rtic-macro" }
 rtic-sw-pass = { path = "../../compilation_passes/rtic-sw-pass", default-features = false }
 rtic-deadline-pass = { path = "../../compilation_passes/rtic-deadline-pass", default-features = false }
-bsp = { package = "zeroheti-bsp", git = "https://github.com/ANurmi/zeroHETI.git" }
+bsp = { package = "zeroheti-bsp", git = "https://github.com/ANurmi/zeroHETI.git", default-features = false }
 
 [features]
 deadline-pass = ["rtic-macro/deadline-pass"]
