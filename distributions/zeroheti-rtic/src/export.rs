@@ -41,19 +41,15 @@ pub use bsp::riscv::interrupt::machine::{
 /// priority is current priority >= ceiling.
 #[inline(always)]
 pub unsafe fn lock<T, R>(ptr: *mut T, priority: u8, ceiling: u8, f: impl FnOnce(&mut T) -> R) -> R {
-    if priority < ceiling {
-        // Save mintthresh
-        let current = mintthresh::write((ceiling as usize).into());
+    // Save mintthresh
+    let current = mintthresh::write((ceiling as usize).into());
 
-        let r = f(unsafe { &mut *ptr });
+    let r = f(unsafe { &mut *ptr });
 
-        // Restore mintthresh
-        mintthresh::write((current as usize).into());
+    // Restore mintthresh
+    mintthresh::write((current as usize).into());
 
-        r
-    } else {
-        f(unsafe { &mut *ptr })
-    }
+    r
 }
 
 /// Sets the given software interrupt as pending
