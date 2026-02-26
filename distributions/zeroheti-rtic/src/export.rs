@@ -80,7 +80,12 @@ pub fn unpend<T: InterruptNumber>(irq: T) {
     bsp::edfic::Edfic::line(irq.number()).unpend();
 }
 
-pub fn enable<T: InterruptNumber>(irq: T, level: u8) {
+pub fn enable<T: InterruptNumber>(
+    irq: T,
+    // HACK: enable accepts 32-bit wide parameter to support EDFIC, that will be
+    // silenty truncated for CLIC and HETIC
+    level: u32,
+) {
     #[cfg(feature = "intc-clic")]
     {
         use bsp::clic::{Clic, Polarity, Trig};
@@ -88,14 +93,14 @@ pub fn enable<T: InterruptNumber>(irq: T, level: u8) {
         Clic::attr(irq).set_trig(Trig::Edge);
         Clic::attr(irq).set_polarity(Polarity::Pos);
         Clic::attr(irq).set_shv(true);
-        Clic::ctl(irq).set_level(level);
+        Clic::ctl(irq).set_level(unsafe { level.try_into().unwrap_unchecked() });
         unsafe { Clic::ie(irq).enable() };
     }
     #[cfg(feature = "intc-hetic")]
     {
         use bsp::hetic::Hetic;
 
-        Hetic::line(irq.number()).set_level_prio(level);
+        Hetic::line(irq.number()).set_level_prio(unsafe { level.try_into().unwrap_unchecked() });
         Hetic::line(irq.number()).enable();
     }
     #[cfg(feature = "intc-edfic")]
@@ -107,6 +112,6 @@ pub fn enable<T: InterruptNumber>(irq: T, level: u8) {
         Edfic::line(irq.number()).enable();
         // HACK: level parameter sets deadline. ??? :D maybe fix using a
         // compiler pass for crazy hardware or something.
-        Edfic::line(irq.number()).set_dl(level);
+        Edfic::line(irq.number()).set_dl(level.into());
     }
 }
