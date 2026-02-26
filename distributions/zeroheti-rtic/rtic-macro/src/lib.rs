@@ -57,7 +57,7 @@ impl CorePassBackend for ZeroHetiRtic {
                     // Set interrupt priority
                     rtic::export::enable(
                         rtic::export::interrupts::#irq_name,
-                        #priority as u8,
+                        #priority,
                     );
                 }
             });
