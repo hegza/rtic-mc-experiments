@@ -4,9 +4,9 @@
 use bsp::rt as _;
 
 #[rtic::app(device=bsp, dispatchers = [Interrupt2, Interrupt3])]
-mod appij {
+mod app {
     use bsp::{
-        CPU_FREQ_HZ, apb_uart::ApbUart, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer,
+        apb_uart::ApbUart, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer, CPU_FREQ_HZ,
     };
     use fugit::ExtU32;
     #[shared]
