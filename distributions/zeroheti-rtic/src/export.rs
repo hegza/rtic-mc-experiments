@@ -109,7 +109,7 @@ pub fn enable<T: InterruptNumber>(
         // HACK: level parameter sets deadline. ??? :D maybe fix using a
         // compiler pass for crazy hardware or something.
         // Convert to deadline
-        let dl = (255 - level) >> 8;
+        let dl = (255 - level) << 8;
         Edfic::line(irq.number()).set_dl(dl);
     }
 }
