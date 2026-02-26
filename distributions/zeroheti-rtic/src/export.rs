@@ -1,7 +1,7 @@
 #![allow(clippy::inline_always)]
 
-pub use bsp::Peripherals;
 pub use bsp::riscv_pac::InterruptNumber;
+pub use bsp::Peripherals;
 
 /// Distribution crate must re-export the `export` module from all the used compilation passes
 pub use rtic_sw_pass::export::*;

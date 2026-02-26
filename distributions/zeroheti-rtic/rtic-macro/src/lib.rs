@@ -3,7 +3,7 @@ use proc_macro2::{Ident, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 
 use rtic_core::{AppArgs, CorePassBackend, RticMacroBuilder, SubAnalysis, SubApp};
-use syn::{ItemFn, parse_quote};
+use syn::{parse_quote, ItemFn};
 
 extern crate proc_macro;
 
