@@ -11,11 +11,7 @@ struct ZeroHetiRtic;
 
 use rtic_sw_pass::SoftwarePass;
 
-#[cfg(not(feature = "intc-edfic"))]
 const MIN_TASK_PRIORITY: u32 = 1; // lowest zeroHETI priority
-// HACK:
-#[cfg(feature = "intc-edfic")]
-const MIN_TASK_PRIORITY: u32 = 0; // deadline can be 0
 
 #[proc_macro_attribute]
 pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -109,19 +105,9 @@ impl CorePassBackend for ZeroHetiRtic {
         _app_info: &SubApp,
         incomplete_lock_fn: syn::ImplItemFn,
     ) -> syn::ImplItemFn {
-        #[cfg(not(feature = "intc-edfic"))]
         let lock_impl: syn::Block = parse_quote! {
             {
                 unsafe { rtic::export::lock(resource_ptr, task_priority as u8, CEILING as u8, f); }
-            }
-        };
-        #[cfg(feature = "intc-edfic")]
-        let lock_impl: syn::Block = parse_quote! {
-            {
-                // Do the trick, and use topmost 8 bits as threshold
-                let task_priority: u8 = 255u8 - (task_priority >> 8) as u8;
-                let ceiling: u8 = 255u8 - (CEILING >> 8) as u8;
-                unsafe { rtic::export::lock(resource_ptr, task_priority, ceiling, f); }
             }
         };
 
