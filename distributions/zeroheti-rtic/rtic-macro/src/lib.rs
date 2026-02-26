@@ -11,7 +11,11 @@ struct ZeroHetiRtic;
 
 use rtic_sw_pass::SoftwarePass;
 
+#[cfg(not(feature = "intc-edfic"))]
 const MIN_TASK_PRIORITY: u32 = 1; // lowest zeroHETI priority
+// HACK:
+#[cfg(feature = "intc-edfic")]
+const MIN_TASK_PRIORITY: u32 = 0; // deadline can be 0
 
 #[proc_macro_attribute]
 pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
