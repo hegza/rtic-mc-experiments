@@ -1,17 +1,12 @@
 #![no_std]
 #![no_main]
 
-#[rtic::app(device = bsp, dispatchers = [Dma2])]
+#[rtic::app(device = bsp, dispatchers = [MachineSoft])]
 mod app {
     use bsp::{
-        CPU_FREQ_HZ,
-        fugit::ExtU32,
-        led::{self, Led},
-        mmap::apb_timer::TIMER0_ADDR,
-        sprintln,
-        timer_group::Timer,
-        uart::ApbUart,
+        CPU_FREQ_HZ, apb_uart::ApbUart, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer,
     };
+    use fugit::ExtU32;
 
     #[shared]
     struct Shared {
@@ -67,7 +62,6 @@ mod app {
             self.shared().uart.lock(|_uart| {
                 sprintln!("SW");
             });
-            led::led_on(Led::Ld2);
         }
     }
 }
