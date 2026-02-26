@@ -11,7 +11,7 @@ struct ZeroHetiRtic;
 
 use rtic_sw_pass::SoftwarePass;
 
-const MIN_TASK_PRIORITY: u16 = 1; // lowest zeroHETI priority
+const MIN_TASK_PRIORITY: u32 = 1; // lowest zeroHETI priority
 
 #[proc_macro_attribute]
 pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
@@ -27,7 +27,7 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
 // =========================================== Trait implementations ===================================================
 impl CorePassBackend for ZeroHetiRtic {
     fn default_task_priority(&self) -> u16 {
-        MIN_TASK_PRIORITY
+        MIN_TASK_PRIORITY as u16
     }
 
     fn post_init(

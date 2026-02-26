@@ -50,7 +50,8 @@ impl Analysis {
 #[derive(Debug)]
 pub struct SubAnalysis {
     // used interrupts and their priorities
-    pub used_irqs: Vec<(syn::Ident, u16)>,
+    // HACK: u32 instead of u16 to support EDFIC deadlines
+    pub used_irqs: Vec<(syn::Ident, u32)>,
     // tasks requiring some late local resource initialization.
     pub late_resource_tasks: Vec<LateResourceTask>,
 }
@@ -61,7 +62,7 @@ impl SubAnalysis {
         let used_interrupts = app
             .tasks
             .iter()
-            .filter_map(|t| Some((t.args.binds.clone()?, t.args.priority)))
+            .filter_map(|t| Some((t.args.binds.clone()?, t.args.priority.into())))
             .collect();
 
         let user_initializable_tasks = app
