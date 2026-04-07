@@ -14,10 +14,9 @@ pub use bsp::hetic::InterruptNumber; // a trait that abstracts an interrupt type
 pub use bsp::register::mintthresh;
 
 pub mod interrupts {
-    pub use bsp::interrupt::CoreInterrupt::*;
-    pub use bsp::interrupt::ExternalInterrupt::*;
+    pub use bsp::interrupt::Interrupt::*;
 }
-pub use bsp::interrupt::{CoreInterrupt, ExternalInterrupt};
+pub use bsp::interrupt::Interrupt;
 pub use bsp::nested_interrupt;
 pub use bsp::riscv::interrupt::machine::{
     disable as interrupt_disable, enable as interrupt_enable,

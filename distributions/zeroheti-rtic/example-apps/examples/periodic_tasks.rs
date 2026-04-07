@@ -9,7 +9,6 @@ mod app {
     use core::arch::asm;
 
     use bsp::{
-        CPU_FREQ_HZ,
         apb_uart::ApbUart,
         clic::{Clic, Polarity, Trig},
         embedded_io::Write,
@@ -20,9 +19,10 @@ mod app {
         sprintln,
         tb::signal_pass,
         timer_group::{Periodic, Timer},
+        CPU_FREQ_HZ,
     };
     use fugit::ExtU32;
-    use rtic::export::{CoreInterrupt, ExternalInterrupt};
+    use rtic::export::Interrupt;
 
     #[shared]
     struct Shared {}
@@ -238,23 +238,23 @@ mod app {
                 Timer::instance::<TIMER1_ADDR>().disable();
                 Timer::instance::<TIMER2_ADDR>().disable();
                 Timer::instance::<TIMER3_ADDR>().disable();
-                Clic::ip(CoreInterrupt::MachineTimer).unpend();
-                Clic::ip(ExternalInterrupt::Timer0Cmp).unpend();
-                Clic::ip(ExternalInterrupt::Timer1Cmp).unpend();
-                Clic::ip(ExternalInterrupt::Timer2Cmp).unpend();
-                Clic::ip(ExternalInterrupt::Timer3Cmp).unpend();
+                Clic::ip(Interrupt::MachineTimer).unpend();
+                Clic::ip(Interrupt::Timer0Cmp).unpend();
+                Clic::ip(Interrupt::Timer1Cmp).unpend();
+                Clic::ip(Interrupt::Timer2Cmp).unpend();
+                Clic::ip(Interrupt::Timer3Cmp).unpend();
             }
 
             // Clean up (RTIC won't do this for us unfortunately)
-            tear_irq(ExternalInterrupt::Timer0Cmp);
-            tear_irq(ExternalInterrupt::Timer1Cmp);
-            tear_irq(ExternalInterrupt::Timer2Cmp);
-            tear_irq(ExternalInterrupt::Timer3Cmp);
-            tear_irq(CoreInterrupt::MachineTimer);
-            Clic::ie(ExternalInterrupt::Timer0Cmp).set_pcs(false);
-            Clic::ie(ExternalInterrupt::Timer1Cmp).set_pcs(false);
-            Clic::ie(ExternalInterrupt::Timer2Cmp).set_pcs(false);
-            Clic::ie(ExternalInterrupt::Timer3Cmp).set_pcs(false);
+            tear_irq(Interrupt::Timer0Cmp);
+            tear_irq(Interrupt::Timer1Cmp);
+            tear_irq(Interrupt::Timer2Cmp);
+            tear_irq(Interrupt::Timer3Cmp);
+            tear_irq(Interrupt::MachineTimer);
+            Clic::ie(Interrupt::Timer0Cmp).set_pcs(false);
+            Clic::ie(Interrupt::Timer1Cmp).set_pcs(false);
+            Clic::ie(Interrupt::Timer2Cmp).set_pcs(false);
+            Clic::ie(Interrupt::Timer3Cmp).set_pcs(false);
 
             let mut serial = unsafe { ApbUart::instance() };
 
