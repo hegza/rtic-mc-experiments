@@ -1,0 +1,3 @@
+[submodule "distributions/atalanta-rtic/platform-atalanta"]
+	path = distributions/atalanta-rtic/platform-atalanta
+	url = https://github.com/soc-hub-fi/Atalanta/
