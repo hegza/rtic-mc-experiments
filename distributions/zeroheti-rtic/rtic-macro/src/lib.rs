@@ -107,7 +107,7 @@ impl CorePassBackend for ZeroHetiRtic {
     ) -> syn::ImplItemFn {
         let lock_impl: syn::Block = parse_quote! {
             {
-                unsafe { rtic::export::lock(resource_ptr, task_priority as u8, CEILING as u8, f); }
+                unsafe { rtic::export::lock(resource_ptr, task_priority as u8, CEILING as u8, f) }
             }
         };
 
