@@ -17,6 +17,7 @@ const MIN_TASK_PRIORITY: u16 = 1; // lowest Atalanta priority
 
 #[proc_macro_attribute]
 pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
+    eprintln!("app enter");
     let mut builder = RticMacroBuilder::new(AtalantaRtic);
 
     // use the standard software pass provided by rtic-sw-pass crate
@@ -32,7 +33,9 @@ pub fn app(args: TokenStream, input: TokenStream) -> TokenStream {
         println!("--- PCS pass added --- ");
     }
 
-    builder.build_rtic_macro(args, input)
+    let ret = builder.build_rtic_macro(args, input);
+    eprintln!("app exit");
+    ret
 }
 
 // =========================================== Trait implementations ===================================================

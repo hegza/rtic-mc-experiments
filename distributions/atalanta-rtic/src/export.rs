@@ -42,7 +42,7 @@ pub unsafe fn lock<T, R>(ptr: *mut T, priority: u8, ceiling: u8, f: impl FnOnce(
         // Save mintthresh
         let current = mintthresh::write((ceiling as usize).into());
 
-        let r = f(&mut *ptr);
+        let r = f(unsafe { &mut *ptr });
 
         // Restore mintthresh
         mintthresh::write((current as usize).into());

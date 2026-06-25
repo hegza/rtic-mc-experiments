@@ -45,32 +45,31 @@ impl RticPass for PcsPass {
 
 impl PcsPass {
     fn analyze(&self, app: &mut App) {
-        // Partition interrupts into PCS interrupts and non-PCS interrupts
-        let (pcs_irqs, rest_irqs): (Vec<_>, Vec<_>) = app.tasks.iter().partition(|task| task.fast);
+        // Partition interrupts into PCS interrupts and
+        // non-PCS interrupts based on the presence of the attribute.
+        let (fast_tasks, other_tasks): (Vec<_>, Vec<_>) =
+            app.tasks.iter().partition(|task| task.fast);
 
         // Limit to maximum number of PCS interrupts supported by hardware
-        if pcs_irqs.len() > self.max_num_pcs {
+        if fast_tasks.len() > self.max_num_pcs {
             panic!(
                 "Exceeded number of interrupts leveraging PCS for this platform ({}), please reduce the number of accelerated tasks\nFast IRQs: {:?}\nOther IRQs: {:?}",
                 self.max_num_pcs,
-            pcs_irqs
-                .iter()
-                .map(|task| format!("{} ({})", task.name, task.binds))
-                .collect::<Vec<_>>(),
-            rest_irqs
-                .iter()
-                .map(|task| task.name.clone())
-                .collect::<Vec<_>>()
+                fast_tasks
+                    .iter()
+                    .map(|task| format!("{} ({})", task.name, task.binds))
+                    .collect::<Vec<_>>(),
+                other_tasks
+                    .iter()
+                    .map(|task| task.name.clone())
+                    .collect::<Vec<_>>()
             );
         }
 
-        let mut pcs_dispatchers = vec![];
-        for task in app.tasks.iter_mut() {
-            if task.fast {
-                // Save bound interrupt for later processing
-                pcs_dispatchers.push(task.binds.clone());
-            }
-        }
+        let pcs_dispatchers = fast_tasks
+            // Save bound interrupt for later processing
+            .map(|task| task.binds.clone())
+            .collect();
         PCS_DISPATCHERS.replace(pcs_dispatchers);
     }
 }

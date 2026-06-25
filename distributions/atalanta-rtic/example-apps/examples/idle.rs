@@ -1,8 +1,12 @@
 #![no_std]
 #![no_main]
 
-#[rtic::app(device = bsp)]
-mod app {
+pub mod workaround {
+    pub use bsp;
+}
+
+#[rtic::app(device = crate::workaround::bsp, peripherals=true, dispatchers=[], cores = 1)]
+pub mod app {
     use core::arch::asm;
 
     use bsp::{

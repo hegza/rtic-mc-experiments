@@ -5,15 +5,15 @@ use syn::{Ident, ItemStruct};
 
 #[derive(Debug)]
 pub struct RticTask {
-    pub name: String,
+    pub ident: String,
     pub binds: Ident,
-    /// User has requested parallel context stacking (PCS) for this line
+    /// Whether the user has requested parallel context stacking (PCS) for this line
     pub fast: bool,
 }
 
 impl RticTask {
     pub fn from_struct((task_struct, attr_idx): (&ItemStruct, usize)) -> syn::Result<Self> {
-        let name = task_struct.ident.to_string();
+        let ident = task_struct.ident.to_string();
         let params = RticAttr::parse_from_attr(&task_struct.attrs[attr_idx]).inspect_err(|_e| {
             eprintln!(
                 "An error occurred while parsing: {:?}",
@@ -27,6 +27,6 @@ impl RticTask {
         let binds = format_ident!("{}", binds_expr.to_token_stream().to_string());
         let fast = params.elements.contains_key(PCS_ATTR_IDENT);
 
-        Ok(Self { name, binds, fast })
+        Ok(Self { ident, binds, fast })
     }
 }
