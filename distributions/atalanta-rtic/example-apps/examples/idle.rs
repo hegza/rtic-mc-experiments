@@ -6,8 +6,8 @@ mod app {
     use core::arch::asm;
 
     use bsp::{
-        fugit::ExtU32, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer, uart::ApbUart,
-        CPU_FREQ,
+        CPU_FREQ, fugit::ExtU32, mmap::apb_timer::TIMER0_ADDR, sprintln, timer_group::Timer,
+        uart::ApbUart,
     };
 
     #[shared]

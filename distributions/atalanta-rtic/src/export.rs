@@ -15,10 +15,10 @@ pub use bsp::register::mintthresh;
 pub mod interrupts {
     pub use bsp::Interrupt::*;
 }
+pub use bsp::Interrupt;
 pub use bsp::riscv::interrupt::machine::{
     disable as interrupt_disable, enable as interrupt_enable,
 };
-pub use bsp::Interrupt;
 
 /// Lock implementation using threshold and global Critical Section (CS)
 ///

@@ -5,23 +5,23 @@
 
 #[rtic::app(device = bsp)]
 mod app {
-
     use core::arch::asm;
 
     use bsp::{
+        CPU_FREQ, Interrupt,
         clic::{Clic, Polarity, Trig},
         embedded_io::Write,
         fugit::ExtU32,
         mmap::{
-            apb_timer::{TIMER0_ADDR, TIMER1_ADDR, TIMER2_ADDR, TIMER3_ADDR},
             CFG_BASE, PERIPH_CLK_DIV_OFS,
+            apb_timer::{TIMER0_ADDR, TIMER1_ADDR, TIMER2_ADDR, TIMER3_ADDR},
         },
         mtimer::{self, MTimer},
-        read_u32, riscv, sprint, sprintln,
+        read_u32, riscv, sprintln,
         tb::signal_pass,
         timer_group::{Periodic, Timer},
         uart::*,
-        write_u32, Interrupt, CPU_FREQ,
+        write_u32,
     };
     use ufmt::derive::uDebug;
 

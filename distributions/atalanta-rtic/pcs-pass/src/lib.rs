@@ -7,8 +7,8 @@ use std::cell::RefCell;
 use codegen::Codegen;
 use parse::App;
 use proc_macro2::TokenStream;
-use rtic_core::parse_utils::RticAttr;
 use rtic_core::RticPass;
+use rtic_core::parse_utils::RticAttr;
 use syn::ItemMod;
 
 pub const PCS_ATTR_IDENT: &str = "fast";
