@@ -39,7 +39,7 @@ pub use bsp::riscv::interrupt::machine::{
 /// It is merely used in order to omit masking in case current
 /// priority is current priority >= ceiling.
 #[inline(always)]
-pub unsafe fn lock<T, R>(ptr: *mut T, priority: u8, ceiling: u8, f: impl FnOnce(&mut T) -> R) -> R {
+pub unsafe fn lock<T, R>(ptr: *mut T, _task_priority: u8, ceiling: u8, f: impl FnOnce(&mut T) -> R) -> R {
     // Save mintthresh
     let current = mintthresh::write((ceiling as usize).into());
 
