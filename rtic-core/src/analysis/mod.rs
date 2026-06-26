@@ -22,6 +22,10 @@ impl Analysis {
         // update resource ceilings
         for app in parsed_app.sub_apps.iter_mut() {
             update_resource_priorities(app.shared.as_mut(), &app.tasks)?;
+
+            if let Some(sr) = app.shared.as_ref() {
+                print_shared_ress(sr);
+            }
         }
 
         // collect and structure key information about the user application to be used during code generation
@@ -48,6 +52,24 @@ impl Analysis {
     }
 }
 
+/// Print shared resources
+fn print_shared_ress(sr: &SharedResources) {
+    let ress = &sr.resources;
+    let res_names = ress.iter().map(|res| res.ident.to_string());
+    let longest = unsafe {
+        res_names
+            .clone()
+            .map(|s| s.chars().count())
+            .max()
+            .unwrap_unchecked()
+    };
+    println!("[RTIC] Shared resources");
+    for res in ress {
+        let pi = res.priority;
+        println!("[RTIC] * {:<longest$} @π={pi}", res.ident);
+    }
+}
+
 #[derive(Debug)]
 pub struct SubAnalysis {
     // used interrupts and their priorities
@@ -60,11 +82,12 @@ pub struct SubAnalysis {
 impl SubAnalysis {
     pub fn run(app: &SubApp) -> syn::Result<Self> {
         // hw interrupts bound to hardware tasks
-        let used_interrupts = app
+        let used_interrupts: Vec<(Ident, u32)> = app
             .tasks
             .iter()
             .filter_map(|t| Some((t.args.binds.clone()?, t.args.priority.into())))
             .collect();
+        print_irqs(&used_interrupts);
 
         let user_initializable_tasks = app
             .tasks
@@ -85,6 +108,31 @@ impl SubAnalysis {
             used_irqs: used_interrupts,
             late_resource_tasks: user_initializable_tasks,
         })
+    }
+}
+
+fn print_irqs(irqs: &[(Ident, u32)]) {
+    if irqs.len() != 0 {
+        println!("[RTIC] Interrupts:");
+        let irq_names = irqs.iter().map(|(irq, _)| irq.to_string());
+        let longest = unsafe {
+            irq_names
+                .clone()
+                .map(|s| s.chars().count())
+                .max()
+                .unwrap_unchecked()
+        };
+        let mut it: Vec<_> = irqs
+            .iter()
+            .zip(irq_names)
+            .map(|((_, prio), irq_name)| (irq_name, prio))
+            .collect();
+        it.sort_by_key(|&(_, prio)| prio);
+
+        // Print IRQs in priority order (highest to lowest)
+        for (irq, prio) in it.iter().rev() {
+            println!("[RTIC] * {irq:<longest$} @p={prio}");
+        }
     }
 }
 
