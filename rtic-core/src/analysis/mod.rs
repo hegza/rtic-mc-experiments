@@ -1,13 +1,14 @@
 use std::collections::HashSet;
 
-use proc_macro2::Span;
-use syn::spanned::Spanned;
-use syn::Ident;
-
-use crate::parser::ast::{HardwareTask, SharedResources};
-use crate::parser::SubApp;
-use crate::App;
 use heck::ToSnakeCase;
+use proc_macro2::Span;
+use syn::Ident;
+use syn::spanned::Spanned;
+
+use crate::App;
+use crate::parser::SubApp;
+use crate::parser::ast::{HardwareTask, SharedResources};
+
 pub struct Analysis {
     pub sub_analysis: Vec<SubAnalysis>,
     pub task_traits: HashSet<syn::Ident>,
