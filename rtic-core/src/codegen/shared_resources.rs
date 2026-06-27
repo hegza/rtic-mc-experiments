@@ -2,8 +2,8 @@ use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
 
 use crate::parser::ast::{RticTask, SharedResources};
-use crate::rtic_functions::get_resource_proxy_lock_fn;
-use crate::rtic_traits::MUTEX_TY;
+use crate::rtic_functions::{get_resource_proxy_lock_fn, get_resource_proxy_read_lock_fn};
+use crate::rtic_traits::{MUTEX_TY, READ_LOCK_TY};
 use crate::{multibin, AppArgs, CorePassBackend, SubApp};
 
 impl SharedResources {
@@ -32,11 +32,20 @@ impl SharedResources {
             let element_name = &element.ident;
             let element_ty = &element.ty;
             let proxy_name = utils::get_proxy_name(element_name);
+            let read_proxy_name = utils::get_read_proxy_name(element_name);
             let mutex_ty = format_ident!("{}", MUTEX_TY);
+            let read_lock_ty = format_ident!("{}", READ_LOCK_TY);
             let cfg_core = multibin::multibin_cfg_core(self.args.core);
 
             // generate the implementation of lock function, using external implementation
             let impl_lock_fn = get_resource_proxy_lock_fn(
+                implementor,
+                app_params,
+                app_info,
+                element,
+                &static_mut_shared_resources,
+            );
+            let impl_read_lock_fn = get_resource_proxy_read_lock_fn(
                 implementor,
                 app_params,
                 app_info,
@@ -65,6 +74,31 @@ impl SharedResources {
                     type ResourceType = #element_ty;
                     #impl_lock_fn
                 }
+                impl #read_lock_ty for #proxy_name {
+                    type ResourceType = #element_ty;
+                    #impl_read_lock_fn
+                }
+
+                // Only readable resource proxy for `#element_name`
+                #cfg_core
+                pub struct #read_proxy_name {
+                    #[doc(hidden)]
+                    task_priority: u16, //This is apprently actually the task's priority. The shared element has its own instance for each tasks...
+                }
+
+                #cfg_core
+                impl #read_proxy_name {
+                    #[inline(always)]
+                    pub fn new(task_priority: u16) -> Self {
+                        Self { task_priority }
+                    }
+                }
+
+                #cfg_core
+                impl #read_lock_ty for #read_proxy_name {
+                    type ResourceType = #element_ty;
+                   #impl_read_lock_fn
+               }
             }
         });
         quote! {
@@ -74,22 +108,41 @@ impl SharedResources {
 
     pub fn generate_shared_for_task(&self, task: &RticTask) -> TokenStream2 {
         let cfg_core = multibin::multibin_cfg_core(self.args.core);
-        let task_resources_idents = &task.args.shared;
-        if task_resources_idents.is_empty() {
+        let task_shared_resources_idents = &task.args.shared;
+        let task_read_resources_idents = &task.args.read;
+        if task_shared_resources_idents.is_empty() && task_read_resources_idents.is_empty() {
             return quote!();
         }
 
         // generate `field_name : proxy_type` to use for populating struct body
-        let field_and_proxytype = task_resources_idents.iter().filter_map(|resource_ident| {
-            if let Some(resource) = self.get_field(resource_ident) {
-                let ident = &resource.ident;
-                let proxy_type = utils::get_proxy_name(ident);
-                Some(quote! {#ident: #proxy_type})
-            } else {
-                None
-            }
-        });
-        let field_and_proxytype2 = field_and_proxytype.clone();
+        let shareds_field_and_proxytype =
+            task_shared_resources_idents
+                .iter()
+                .filter_map(|resource_ident| {
+                    if let Some(resource) = self.get_field(resource_ident) {
+                        let ident = &resource.ident;
+                        let proxy_type = utils::get_proxy_name(ident);
+                        Some(quote! {#ident: #proxy_type})
+                    } else {
+                        None
+                    }
+                });
+        let shareds_field_and_proxytype2 = shareds_field_and_proxytype.clone();
+
+        // generate `field_name : proxy_type` to use for populating struct body
+        let reads_field_and_proxytype =
+            task_read_resources_idents
+                .iter()
+                .filter_map(|resource_ident| {
+                    if let Some(resource) = self.get_field(resource_ident) {
+                        let ident = &resource.ident;
+                        let proxy_type = utils::get_read_proxy_name(ident);
+                        Some(quote! {#ident: #proxy_type})
+                    } else {
+                        None
+                    }
+                });
+        let reads_field_and_proxytype2 = reads_field_and_proxytype.clone();
 
         // TODO: replace `shared(&self)` with individual `shared_resource_name(&self) -> proxy_type`
         // to avoid constructing the whole shared structure only for one resource access.
@@ -111,7 +164,8 @@ impl SharedResources {
             // internal struct for `#task_ty` resource proxies
             #cfg_core
             pub struct #task_shared_resources_struct {
-                #(pub #field_and_proxytype ,)*
+                #(pub #shareds_field_and_proxytype ,)*
+                #(pub #reads_field_and_proxytype ,)*
             }
 
             #cfg_core
@@ -119,7 +173,8 @@ impl SharedResources {
                 #[inline(always)]
                 pub fn new(priority: u16) -> Self {
                     Self {
-                        #(#field_and_proxytype2::new(priority) ,)*
+                        #(#shareds_field_and_proxytype2::new(priority) ,)*
+                        #(#reads_field_and_proxytype2::new(priority) ,)*
                     }
                 }
             }
@@ -134,5 +189,10 @@ pub mod utils {
     #[inline(always)]
     pub fn get_proxy_name(ident: &syn::Ident) -> syn::Ident {
         format_ident!("__{ident}_mutex")
+    }
+
+    #[inline(always)]
+    pub fn get_read_proxy_name(ident: &syn::Ident) -> syn::Ident {
+        format_ident!("__{ident}_readable")
     }
 }

@@ -55,8 +55,10 @@ pub struct TaskArgs {
     /// Interrupt handler name
     pub binds: Option<syn::Ident>,
     pub priority: u16,
-    /// Shared resources, stored as a list of [identifiers](`proc_macro2::Ident`)
+    /// Shared (written) resources, stored as a list of [identifiers](`proc_macro2::Ident`)
     pub shared: Vec<Ident>,
+    /// Shared (only read) resources, stored as a list of [identifiers](`proc_macro2::Ident`)
+    pub read: Vec<Ident>,
     pub core: u32,
     // tells whether a task is native to this compilation pass or if another compilation pass handles its trait implementation
     pub task_trait: Ident,
@@ -69,6 +71,7 @@ impl TaskArgs {
                 binds: None,
                 priority: DEFAULT_TASK_PRIORITY.load(Ordering::Relaxed),
                 shared: Default::default(),
+                read: Default::default(),
                 core: 0,
                 task_trait: format_ident!("{HWT_TRAIT_TY}"),
             });
@@ -78,6 +81,7 @@ impl TaskArgs {
         let mut task_trait: Option<Ident> = None;
         let mut priority: Option<LitInt> = None;
         let mut shared: Option<ExprArray> = None;
+        let mut read: Option<ExprArray> = None;
         let mut core: Option<LitInt> = None;
 
         syn::meta::parser(|meta| {
@@ -87,6 +91,8 @@ impl TaskArgs {
                 priority = Some(meta.value()?.parse()?);
             } else if meta.path.is_ident("shared") {
                 shared = Some(meta.value()?.parse()?);
+            } else if meta.path.is_ident("read") {
+                read = Some(meta.value()?.parse()?);
             } else if meta.path.is_ident("core") {
                 core = Some(meta.value()?.parse()?);
             } else if meta.path.is_ident("task_trait") {
@@ -129,10 +135,20 @@ impl TaskArgs {
             })
             .unwrap_or_default();
 
+        let read = read
+            .map(|expr| {
+                expr.elems
+                    .into_iter()
+                    .map(|elem| Ident::new(&elem.to_token_stream().to_string(), Span::call_site()))
+                    .collect()
+            })
+            .unwrap_or_default();
+
         Ok(Self {
             binds,
             priority,
             shared,
+            read,
             core,
             task_trait,
         })
@@ -180,6 +196,7 @@ pub struct SharedElement {
     pub ident: Ident,
     pub ty: syn::Type,
     pub priority: u16,
+    pub read_priority: u16,
 }
 
 #[derive(Debug, Clone, Default)]
