@@ -6,11 +6,13 @@ pub const SWT_TRAIT_TY: &str = "RticSwTask"; // FIXME: add a backend trait metho
 pub const IDLE_TRAIT_TY: &str = "RticIdleTask";
 
 pub const MUTEX_TY: &str = "RticMutex";
+pub const READ_LOCK_TY: &str = "RticReadLock";
 
 pub(crate) fn get_rtic_traits_mod() -> TokenStream2 {
     let hw_task_trait = hw_task_trait();
     let idle_trait = idle_task_trait();
     let mutex_trait = mutex_trait();
+    let read_lock_trait = read_lock_trait();
     quote! {
         /// Module defining rtic traits
         pub use rtic_traits::*;
@@ -18,6 +20,7 @@ pub(crate) fn get_rtic_traits_mod() -> TokenStream2 {
             #hw_task_trait
             #idle_trait
             #mutex_trait
+            #read_lock_trait
         }
     }
 }
@@ -57,6 +60,15 @@ fn mutex_trait() -> TokenStream2 {
         pub trait #mutex {
             type ResourceType;
             fn lock<R>(&mut self, f: impl FnOnce(&mut Self::ResourceType) -> R) -> R;
+        }
+    }
+}
+fn read_lock_trait() -> TokenStream2 {
+    let read_lock = format_ident!("{READ_LOCK_TY}");
+    quote! {
+        pub trait #read_lock {
+            type ResourceType;
+            fn read_lock<R>(&self, f: impl FnOnce(&Self::ResourceType) -> R) -> R;
         }
     }
 }

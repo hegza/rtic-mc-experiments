@@ -168,6 +168,7 @@ impl App {
                             .expect("unnamed struct is not supported for shared resources"),
                         ty: f.ty.clone(),
                         priority: 0,
+                        read_priority: 0,
                     })
                     .collect();
                 Ok((
