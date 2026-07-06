@@ -74,6 +74,7 @@ impl SharedResources {
                     type ResourceType = #element_ty;
                     #impl_lock_fn
                 }
+                #cfg_core
                 impl #read_lock_ty for #proxy_name {
                     type ResourceType = #element_ty;
                     #impl_read_lock_fn
