@@ -84,7 +84,7 @@ impl SharedResources {
                 #cfg_core
                 pub struct #read_proxy_name {
                     #[doc(hidden)]
-                    task_priority: u16, //This is apprently actually the task's priority. The shared element has its own instance for each tasks...
+                    task_priority: u16,
                 }
 
                 #cfg_core
