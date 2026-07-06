@@ -144,7 +144,31 @@ fn update_resource_priorities(
     for task in hw_tasks.iter() {
         let task_priority = task.args.priority;
         for resource_ident in task.args.shared.iter() {
+            // Go trough all shared resources of the tasks
             if let Some(shared_element) = shared.get_field_mut(resource_ident) {
+                // increase the shared_element's priority to the highest priority task that has it as a shared resource
+                if shared_element.priority < task_priority {
+                    shared_element.priority = task_priority
+                }
+
+                // increase the shared_element's read_priority to the highest priority task that has it as a shared resource
+                if shared_element.read_priority < task_priority {
+                    shared_element.read_priority = task_priority
+                }
+            } else {
+                return Err(syn::Error::new(
+                    task.task_struct.span(),
+                    format!(
+                        "The resource `{resource_ident}` was not found in `{}`",
+                        shared.strct.ident
+                    ),
+                ));
+            }
+        }
+        for resource_ident in task.args.read.iter() {
+            // Go trough all read resources of the tasks
+            if let Some(shared_element) = shared.get_field_mut(resource_ident) {
+                // increase the shared_element's priority to the highest priority task that has it as a shared OR read resource
                 if shared_element.priority < task_priority {
                     shared_element.priority = task_priority
                 }
