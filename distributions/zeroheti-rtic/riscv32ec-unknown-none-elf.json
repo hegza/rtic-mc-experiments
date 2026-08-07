@@ -7,7 +7,7 @@
   "eh-frame-header": false,
   "emit-debug-gdb-scripts": false,
   "features": "+e,+c,+forced-atomics",
-  "linker": "rust-lld",
+  "linker": "riscv64-unknown-elf-gcc",
   "linker-flavor": "gnu-lld",
   "llvm-abiname": "ilp32e",
   "llvm-target": "riscv32",
