@@ -2,7 +2,10 @@ use std::collections::HashMap;
 
 use proc_macro2::Span;
 use quote::format_ident;
-use syn::{spanned::Spanned, Ident, Item, ItemFn, ItemImpl, ItemStruct, ItemUse, Type};
+use syn::parse::Parser;
+use syn::punctuated::Punctuated;
+use syn::spanned::Spanned;
+use syn::{Ident, Item, ItemFn, ItemImpl, ItemStruct, ItemUse, Meta, Type};
 
 use ast::*;
 
@@ -56,7 +59,18 @@ impl App {
                     }
                 }
                 Item::Struct(strct) => {
-                    if let Some(attr_idx) = Self::is_struct_with_attr(&strct, "task") {
+                    if Self::cfg_disabled(&strct.attrs) {
+                        // cfg-gated off. Keep the item so that the module compiles,
+                        // but strip the rtic pseudo-attributes that are not
+                        // resolvable outside of the app macro.
+                        let mut strct = strct;
+                        strct.attrs.retain(|attr| {
+                            !Self::is_attr_named(attr, "task")
+                                && !Self::is_attr_named(attr, "shared")
+                                && !Self::is_attr_named(attr, "idle")
+                        });
+                        other_code.push(Item::Struct(strct))
+                    } else if let Some(attr_idx) = Self::is_struct_with_attr(&strct, "task") {
                         task_structs.push((strct, attr_idx))
                     } else if let Some(attr_idx) = Self::is_struct_with_attr(&strct, "shared") {
                         shared_resources.push((strct, attr_idx));
@@ -67,7 +81,11 @@ impl App {
                     }
                 }
                 Item::Impl(impl_item) => {
-                    if let Some(implementor) = Self::is_task_impl(&impl_item) {
+                    if Self::cfg_disabled(&impl_item.attrs) {
+                        // cfg-gated off, e.g. a task trait implementation bound to
+                        // a task struct that is gated off by the same feature.
+                        other_code.push(impl_item.into())
+                    } else if let Some(implementor) = Self::is_task_impl(&impl_item) {
                         let _ = task_impls.insert(implementor, impl_item);
                     } else {
                         other_code.push(impl_item.into())
@@ -115,6 +133,70 @@ impl App {
             }
         }
         None
+    }
+
+    /// Returns `true` if the item is disabled by a `#[cfg(...)]` attribute whose
+    /// predicate evaluates to `false` given the features active for this crate.
+    ///
+    /// The active feature set is read from the `CARGO_FEATURE_*` environment
+    /// variables that cargo exports for the crate currently being compiled.
+    fn cfg_disabled(attrs: &[syn::Attribute]) -> bool {
+        attrs
+            .iter()
+            .filter(|attr| attr.path().is_ident("cfg"))
+            .filter_map(|attr| match &attr.meta {
+                Meta::List(list) => Some(Self::eval_cfg_predicate(&list.tokens)),
+                _ => None,
+            })
+            .any(|enabled| !enabled)
+    }
+
+    /// Evaluates a comma-separated list of `cfg` predicates under `all` semantics
+    /// (empty list evaluates to `true`).
+    fn eval_cfg_predicate(tokens: &proc_macro2::TokenStream) -> bool {
+        let metas = <Punctuated<Meta, syn::Token![,]>>::parse_terminated
+            .parse2(tokens.clone())
+            .unwrap_or_default();
+        metas.iter().all(Self::eval_cfg_meta)
+    }
+
+    /// Evaluates a single `cfg` predicate. Unknown predicates are conservatively
+    /// assumed to be enabled so that items are never dropped unintentionally.
+    fn eval_cfg_meta(meta: &Meta) -> bool {
+        match meta {
+            Meta::NameValue(nv) if nv.path.is_ident("feature") => {
+                if let syn::Expr::Lit(lit) = &nv.value {
+                    if let syn::Lit::Str(s) = &lit.lit {
+                        let name = s.value().to_uppercase().replace('-', "_");
+                        // `CARGO_FEATURE_*` is only visible to build scripts, not to
+                        // the proc macro expansion. Distributions/crates may forward
+                        // the enabled feature set into the rustc environment through
+                        // `cargo:rustc-env=RTIC_CFG_FEATURE_<NAME>=1` in their
+                        // `build.rs`. Fall back to `CARGO_FEATURE_*` for robustness.
+                        let enabled = std::env::var(format!("RTIC_CFG_FEATURE_{name}")).is_ok()
+                            || std::env::var(format!("CARGO_FEATURE_{name}")).is_ok();
+                        return enabled;
+                    }
+                }
+                true
+            }
+            Meta::List(list) if list.path.is_ident("not") => {
+                !Self::eval_cfg_predicate(&list.tokens)
+            }
+            Meta::List(list) if list.path.is_ident("all") => Self::eval_cfg_predicate(&list.tokens),
+            Meta::List(list) if list.path.is_ident("any") => {
+                let metas = <Punctuated<Meta, syn::Token![,]>>::parse_terminated
+                    .parse2(list.tokens.clone())
+                    .unwrap_or_default();
+                metas.iter().any(Self::eval_cfg_meta)
+            }
+            _ => true,
+        }
+    }
+
+    fn is_attr_named(attr: &syn::Attribute, attr_name: &str) -> bool {
+        let path = attr.meta.path();
+        path.segments.len() == 1 && path.segments[0].ident == attr_name
     }
 
     /// returns the index of the `attr_name` attribute if found in the attribute list of some struct
