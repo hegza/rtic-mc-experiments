@@ -257,11 +257,19 @@ pub mod app
         {
             const CEILING : u16 = 2u16; let task_priority =
             self.task_priority; let resource_ptr = unsafe
-            { & mut SHARED.assume_init_mut().uart } as * mut _; unsafe
+            { & mut SHARED.assume_init_mut().uart } as * mut _; < __rtic_obs
+            as RticObservability > ::
+            on_res_acq(ResourceId :: Uart, task_priority, CEILING); let
+            __rtic_obs_result =
             {
-                rtic :: export ::
-                lock(resource_ptr, task_priority as u8, CEILING as u8, f)
-            }
+                unsafe
+                {
+                    rtic :: export ::
+                    lock(resource_ptr, task_priority as u8, CEILING as u8, f)
+                }
+            }; < __rtic_obs as RticObservability > ::
+            on_res_rel(ResourceId :: Uart, task_priority, CEILING);
+            __rtic_obs_result
         }
     } impl RticReadLock for __uart_mutex
     {
@@ -271,11 +279,19 @@ pub mod app
             const CEILING : u16 = 2u16; let task_priority =
             self.task_priority; let resource_ptr = unsafe
             { & mut SHARED.assume_init_mut().uart } as * mut _; let f = |
-            resource : & mut Self :: ResourceType | { f(resource) }; unsafe
+            resource : & mut Self :: ResourceType | { f(resource) }; <
+            __rtic_obs as RticObservability > ::
+            on_res_acq(ResourceId :: Uart, task_priority, CEILING); let
+            __rtic_obs_result =
             {
-                rtic :: export ::
-                lock(resource_ptr, task_priority as u8, CEILING as u8, f)
-            }
+                unsafe
+                {
+                    rtic :: export ::
+                    lock(resource_ptr, task_priority as u8, CEILING as u8, f)
+                }
+            }; < __rtic_obs as RticObservability > ::
+            on_res_rel(ResourceId :: Uart, task_priority, CEILING);
+            __rtic_obs_result
         }
     } pub struct __uart_readable { #[doc(hidden)] task_priority : u16, } impl
     __uart_readable
@@ -290,11 +306,19 @@ pub mod app
             const CEILING : u16 = 2u16; let task_priority =
             self.task_priority; let resource_ptr = unsafe
             { & mut SHARED.assume_init_mut().uart } as * mut _; let f = |
-            resource : & mut Self :: ResourceType | { f(resource) }; unsafe
+            resource : & mut Self :: ResourceType | { f(resource) }; <
+            __rtic_obs as RticObservability > ::
+            on_res_acq(ResourceId :: Uart, task_priority, CEILING); let
+            __rtic_obs_result =
             {
-                rtic :: export ::
-                lock(resource_ptr, task_priority as u8, CEILING as u8, f)
-            }
+                unsafe
+                {
+                    rtic :: export ::
+                    lock(resource_ptr, task_priority as u8, CEILING as u8, f)
+                }
+            }; < __rtic_obs as RticObservability > ::
+            on_res_rel(ResourceId :: Uart, task_priority, CEILING);
+            __rtic_obs_result
         }
     } #[doc = "Unique type for core 0"] pub use core0_type_mod ::
     __rtic__internal__Core0; mod core0_type_mod
