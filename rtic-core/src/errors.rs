@@ -12,6 +12,9 @@ pub enum ParseError {
         error("The value passed to the `device` argument must be a path to a PAC crate.")
     )]
     DeviceNotPath,
+
+    #[error("The value passed to the `obs` argument must be a path to an observability type.")]
+    ObsNotPath,
 }
 impl ParseError {
     pub fn to_syn(&self, span: proc_macro2::Span) -> syn::Error {

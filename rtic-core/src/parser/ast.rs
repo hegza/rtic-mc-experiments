@@ -2,14 +2,14 @@ use std::sync::atomic::Ordering;
 
 use heck::ToSnakeCase;
 use proc_macro2::Span;
-use quote::{format_ident, ToTokens};
+use quote::{ToTokens, format_ident};
 use syn::{
-    parse::Parser, parse_quote, spanned::Spanned, Expr, ExprArray, ExprLit, Ident, ItemFn,
-    ItemImpl, ItemStruct, Lit, LitInt, Meta,
+    Expr, ExprArray, ExprLit, Ident, ItemFn, ItemImpl, ItemStruct, Lit, LitInt, Meta,
+    parse::Parser, parse_quote, spanned::Spanned,
 };
 
 use crate::{
-    errors::ParseError, parse_utils::RticAttr, rtic_traits::HWT_TRAIT_TY, DEFAULT_TASK_PRIORITY,
+    DEFAULT_TASK_PRIORITY, errors::ParseError, parse_utils::RticAttr, rtic_traits::HWT_TRAIT_TY,
 };
 
 #[derive(Debug)]
@@ -262,6 +262,12 @@ pub struct AppArgs {
     pub pacs: Vec<syn::Path>,
     pub peripherals: bool,
     pub cores: u32,
+    /// Optional path to a type implementing [`crate::rtic_traits::OBS_TRAIT_TY`].
+    ///
+    /// When set, RTIC emits hooks (task activation/completion, resource
+    /// acquire/release) that call into the type's `RticObservability`
+    /// methods. When `None`, no hook code is generated at all.
+    pub obs: Option<syn::Path>,
 }
 
 impl AppArgs {
@@ -312,10 +318,18 @@ impl AppArgs {
             _ => return Err(ParseError::DeviceNotPath.to_syn(args_span)),
         };
 
+        // parse the optional path to an observability type
+        let obs = match args.elements.remove("obs") {
+            Some(Expr::Path(path_to_obs)) => Some(path_to_obs.path),
+            Some(_) => return Err(ParseError::ObsNotPath.to_syn(args_span)),
+            None => None,
+        };
+
         Ok(Self {
             pacs,
             peripherals: false, // TODO: not supported yet
             cores,
+            obs,
         })
     }
 }
