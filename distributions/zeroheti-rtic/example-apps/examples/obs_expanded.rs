@@ -92,9 +92,10 @@ pub mod app
     {
         rtic :: export :: interrupt_disable(); let r = f(); unsafe
         { rtic :: export :: interrupt_enable(); } r
-    } struct Obs; static mut __rtic_internal__Sw1__INPUTS : rtic :: export ::
-    Queue < < Sw1 as RticSwTask > :: SpawnInput, 2 > = rtic :: export :: Queue
-    :: new(); impl Sw1
+    } struct Obs; impl RticObservability for Obs {} static mut
+    __rtic_internal__Sw1__INPUTS : rtic :: export :: Queue < < Sw1 as
+    RticSwTask > :: SpawnInput, 2 > = rtic :: export :: Queue :: new(); impl
+    Sw1
     {
         pub fn spawn(input : < Sw1 as RticSwTask > :: SpawnInput) -> Result <
         (), < Sw1 as RticSwTask > :: SpawnInput >
@@ -145,10 +146,16 @@ pub mod app
     {
         fn init(_ : ()) -> Self { Self } fn exec(& mut self)
         {
-            self.shared().uart.lock(| _uart |
-            { sprintln! ("T"); sprintln! ("1"); }); Sw1 :: spawn(()).unwrap();
-            self.shared().uart.lock(| _uart |
-            { sprintln! ("T"); sprintln! ("2"); });
+            < __rtic_obs as RticObservability > ::
+            on_task_act(TaskId :: SomeTask);
+            {
+                self.shared().uart.lock(| _uart |
+                { sprintln! ("T"); sprintln! ("1"); }); Sw1 ::
+                spawn(()).unwrap();
+                self.shared().uart.lock(| _uart |
+                { sprintln! ("T"); sprintln! ("2"); });
+            } < __rtic_obs as RticObservability > ::
+            on_task_comp(TaskId :: SomeTask);
         } type InitArgs = ();
     } impl SomeTask { pub const fn priority() -> u16 { 1u16 } } impl SomeTask
     {
@@ -174,8 +181,11 @@ pub mod app
     {
         type SpawnInput = (); fn init(_ : ()) -> Self { Self } fn
         exec(& mut self, _p : ())
-        { self.shared().uart.lock(| _uart | { sprintln! ("SW"); }); } type
-        InitArgs = ();
+        {
+            < __rtic_obs as RticObservability > :: on_task_act(TaskId :: Sw1);
+            { self.shared().uart.lock(| _uart | { sprintln! ("SW"); }); } <
+            __rtic_obs as RticObservability > :: on_task_comp(TaskId :: Sw1);
+        } type InitArgs = ();
     } impl Sw1 { pub const fn priority() -> u16 { 2u16 } } impl Sw1
     {
         pub fn shared(& self) -> __sw1_shared_resources
@@ -202,24 +212,29 @@ pub mod app
     {
         fn init(_ : ()) -> Self { Self } fn exec(& mut self)
         {
-            unsafe
+            < __rtic_obs as RticObservability > ::
+            on_task_act(TaskId :: Core0Priority2Dispatcher);
             {
-                let mut ready_consumer =
-                __rtic_internal__Core0Prio2Tasks__RQ.split().1; while let
-                Some(task) = ready_consumer.dequeue()
+                unsafe
                 {
-                    match task
+                    let mut ready_consumer =
+                    __rtic_internal__Core0Prio2Tasks__RQ.split().1; while let
+                    Some(task) = ready_consumer.dequeue()
                     {
-                        Core0Prio2Tasks :: Sw1 =>
+                        match task
                         {
-                            let mut input_consumer =
-                            __rtic_internal__Sw1__INPUTS.split().1; let input =
-                            input_consumer.dequeue_unchecked();
-                            SW1.assume_init_mut().exec(input);
+                            Core0Prio2Tasks :: Sw1 =>
+                            {
+                                let mut input_consumer =
+                                __rtic_internal__Sw1__INPUTS.split().1; let input =
+                                input_consumer.dequeue_unchecked();
+                                SW1.assume_init_mut().exec(input);
+                            }
                         }
                     }
                 }
-            }
+            } < __rtic_obs as RticObservability > ::
+            on_task_comp(TaskId :: Core0Priority2Dispatcher);
         } type InitArgs = ();
     } impl Core0Priority2Dispatcher
     { pub const fn priority() -> u16 { 2u16 } } impl Core0Priority2Dispatcher
@@ -321,7 +336,7 @@ pub mod app
     r" Utility functions used to enforce implementing appropriate task traits"]
     mod __rtic_trait_checks
     {
-        use super :: * ; pub fn implements_rtic_task < T : RticTask > () {}
-        pub fn implements_rtic_sw_task < T : RticSwTask > () {}
+        use super :: * ; pub fn implements_rtic_sw_task < T : RticSwTask > ()
+        {} pub fn implements_rtic_task < T : RticTask > () {}
     }
 }

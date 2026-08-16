@@ -10,6 +10,8 @@ mod app {
 
     struct Obs;
 
+    impl RticObservability for Obs {}
+
     #[shared]
     struct Shared {
         uart: ApbUart,
