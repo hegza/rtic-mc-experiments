@@ -16,15 +16,24 @@ use crate::{
 
 impl RticTask {
     /// Generates task definition, Context struct, resource proxies and binds task to appropriate interrupt
-    pub fn generate_task_def(&self, shared_resources: Option<&SharedResources>) -> TokenStream2 {
+    pub fn generate_task_def(
+        &self,
+        shared_resources: Option<&SharedResources>,
+        obs: Option<&syn::Path>,
+    ) -> TokenStream2 {
         let cfg_core = multibin::multibin_cfg_core(self.args.core);
         let allow_unused_not_core =
             multibin::multibin_cfg_attr_not_core(self.args.core, quote! {allow(unused)});
         let task_ty = &self.task_struct.ident;
         let task_static_handle = &self.name_uppercase();
         let task_struct = &self.task_struct;
-        let task_impl = &self.struct_impl;
         let task_trait_check = rtic_functions::trait_check_call_for(self);
+
+        // Wrap the user `exec` body with the observability hooks, when an
+        // observer is configured. This runs before the multibin handling so
+        // that only this core's copy of the impl keeps the wrapped body.
+        let wrapped_task_impl = obs.and_then(|_| self.wrap_exec_with_obs());
+        let task_impl = wrapped_task_impl.or_else(|| self.struct_impl.clone());
 
         #[cfg(feature = "multibin")]
         let task_impl = task_impl
@@ -48,6 +57,31 @@ impl RticTask {
             #shared_mod
             #current_current_fn
         }
+    }
+
+    /// Wrap the task's user `exec` method with the observability hooks
+    /// `on_task_act`/`on_task_comp`, producing a new `ItemImpl`.
+    ///
+    /// Returns `None` for externally-implemented tasks (no `struct_impl`), as
+    /// their `exec` body cannot be wrapped at this level.
+    fn wrap_exec_with_obs(&self) -> Option<syn::ItemImpl> {
+        let task_name = self.name();
+        let mut wrapped = self.struct_impl.clone()?;
+        wrapped.items.iter_mut().for_each(|item| {
+            if let ImplItem::Fn(f) = item {
+                if f.sig.ident == "exec" {
+                    let body = &f.block;
+                    f.block = parse_quote! {
+                        {
+                            <__rtic_obs as RticObservability>::on_task_act(TaskId::#task_name);
+                            #body
+                            <__rtic_obs as RticObservability>::on_task_comp(TaskId::#task_name);
+                        }
+                    };
+                }
+            }
+        });
+        Some(wrapped)
     }
 
     pub fn task_init_call(&self) -> Option<TokenStream2> {

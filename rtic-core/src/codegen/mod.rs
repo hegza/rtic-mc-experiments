@@ -117,7 +117,7 @@ impl<'a> CodeGen<'a> {
 
             // idle
             let def_idle_task = app.idle.as_ref().map(|idle| {
-                let idle_task = idle.generate_task_def(app.shared.as_ref());
+                let idle_task = idle.generate_task_def(app.shared.as_ref(), None);
                 Some(idle_task)
             });
 
@@ -128,7 +128,7 @@ impl<'a> CodeGen<'a> {
             let tasks_def = app
                 .tasks
                 .iter()
-                .map(|task| task.generate_task_def(app.shared.as_ref()));
+                .map(|task| task.generate_task_def(app.shared.as_ref(), self.app.args.obs.as_ref()));
             let task_init_calls = app.tasks.iter().filter_map(RticTask::task_init_call);
 
             let hw_tasks_binds = app
