@@ -419,7 +419,7 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "zeroheti-bsp"
 version = "0.1.0"
-source = "git+https://github.com/ANurmi/zeroHETI.git#1b2a79c6df5edbde5aa5cbe61d991920295174a9"
+source = "git+https://github.com/ANurmi/zeroHETI.git#778856537bd09dc37d95481bb07a1a2fc21c2f8d"
 dependencies = [
  "bitflags",
  "embedded-io",
@@ -436,7 +436,7 @@ dependencies = [
 [[package]]
 name = "zeroheti-bsp-macros"
 version = "0.1.0"
-source = "git+https://github.com/ANurmi/zeroHETI.git#1b2a79c6df5edbde5aa5cbe61d991920295174a9"
+source = "git+https://github.com/ANurmi/zeroHETI.git#778856537bd09dc37d95481bb07a1a2fc21c2f8d"
 dependencies = [
  "constcat",
  "proc-macro2",
