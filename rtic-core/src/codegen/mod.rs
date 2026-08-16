@@ -125,10 +125,9 @@ impl<'a> CodeGen<'a> {
                 generate_idle_call(app.idle.as_ref(), implementation.populate_idle_loop());
 
             // tasks
-            let tasks_def = app
-                .tasks
-                .iter()
-                .map(|task| task.generate_task_def(app.shared.as_ref(), self.app.args.obs.as_ref()));
+            let tasks_def = app.tasks.iter().map(|task| {
+                task.generate_task_def(app.shared.as_ref(), self.app.args.obs.as_ref())
+            });
             let task_init_calls = app.tasks.iter().filter_map(RticTask::task_init_call);
 
             let hw_tasks_binds = app
@@ -302,8 +301,8 @@ fn generate_obs_declarations(app: &App) -> Option<TokenStream2> {
             quote! { #variant }
         })
         .collect();
-    let non_camel_case_allow = need_non_camel_case_allow
-        .then(|| quote!(#[allow(non_camel_case_types)]));
+    let non_camel_case_allow =
+        need_non_camel_case_allow.then(|| quote!(#[allow(non_camel_case_types)]));
 
     Some(quote! {
         use #obs as __rtic_obs;
