@@ -1,4 +1,4 @@
-use heck::ToSnakeCase;
+use heck::{ToSnakeCase, ToUpperCamelCase};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{ImplItemFn, ItemFn, parse_quote};
@@ -33,7 +33,7 @@ pub(crate) fn get_resource_proxy_lock_fn(
 ) -> ImplItemFn {
     let ceiling = resource.priority;
     let resource_ident = &resource.ident;
-    let lock_fn = parse_quote! {
+    let lock_fn: syn::ImplItemFn = parse_quote! {
         fn lock<R>(&mut self, f: impl FnOnce(&mut Self::ResourceType) -> R) -> R {
             // `self` refers to the resource proxy struct
 
@@ -46,7 +46,12 @@ pub(crate) fn get_resource_proxy_lock_fn(
             // call for example rtic::export::lock(resource_ptr, task_priority, ...., f)
         }
     };
-    implementor.generate_resource_proxy_lock_impl(app_params, app_info, lock_fn)
+    let preamble_len = lock_fn.block.stmts.len();
+    let lock_fn = implementor.generate_resource_proxy_lock_impl(app_params, app_info, lock_fn);
+    if app_params.obs.is_some() {
+        return wrap_lock_fn_with_obs(lock_fn, resource, preamble_len);
+    }
+    lock_fn
     // TODO: we should validate if the implementor has kept the correct function signature by comparing it to the initial signature
 }
 
@@ -59,7 +64,7 @@ pub(crate) fn get_resource_proxy_read_lock_fn(
 ) -> ImplItemFn {
     let ceiling = resource.read_priority;
     let resource_ident = &resource.ident;
-    let lock_fn = parse_quote! {
+    let lock_fn: syn::ImplItemFn = parse_quote! {
         fn read_lock<R>(&self, f: impl FnOnce(&Self::ResourceType) -> R) -> R {
             // `self` refers to the resource proxy struct
 
@@ -75,8 +80,54 @@ pub(crate) fn get_resource_proxy_read_lock_fn(
             // call for example rtic::export::lock(resource_ptr, task_priority, ...., f)
         }
     };
-    implementor.generate_resource_proxy_lock_impl(app_params, app_info, lock_fn)
+    let preamble_len = lock_fn.block.stmts.len();
+    let lock_fn = implementor.generate_resource_proxy_lock_impl(app_params, app_info, lock_fn);
+    if app_params.obs.is_some() {
+        return wrap_lock_fn_with_obs(lock_fn, resource, preamble_len);
+    }
+    lock_fn
     // TODO: we should validate if the implementor has kept the correct function signature by comparing it to the initial signature
+}
+
+/// Wrap the (backend-completed) lock/read_lock function body with the
+/// observability hooks `on_res_acq`/`on_res_rel`.
+///
+/// The first `preamble_len` statements of the body are the rtic-core generated
+/// preamble (`const CEILING`, `let task_priority`, `let resource_ptr` and, for
+/// `read_lock`, `let f`); the backend only appends statements to that skeleton,
+/// so the remaining statements form the actual critical-section implementation
+/// which is captured into `__rtic_obs_result`. The return value `R` is
+/// preserved exactly.
+fn wrap_lock_fn_with_obs(
+    mut lock_fn: ImplItemFn,
+    resource: &SharedElement,
+    preamble_len: usize,
+) -> ImplItemFn {
+    let res_variant = format_ident!("{}", resource.ident.to_string().to_upper_camel_case());
+    let mut block = lock_fn.block;
+    let mut stmts = block.stmts;
+    let backend_stmts: Vec<_> = stmts.split_off(preamble_len);
+
+    let mut new_stmts = stmts;
+    new_stmts.push(parse_quote! {
+        <__rtic_obs as RticObservability>::on_res_acq(ResourceId::#res_variant, task_priority, CEILING);
+    });
+    new_stmts.push(parse_quote! {
+        let __rtic_obs_result = { #(#backend_stmts)* };
+    });
+    new_stmts.push(parse_quote! {
+        <__rtic_obs as RticObservability>::on_res_rel(ResourceId::#res_variant, task_priority, CEILING);
+    });
+    // unwritten as a `Stmt` (which requires a trailing `;`); keep it as a
+    // semicolon-free expression statement so the captured `R` value flows out.
+    let result_expr: syn::Expr = parse_quote! {
+        __rtic_obs_result
+    };
+    new_stmts.push(syn::Stmt::Expr(result_expr, None));
+    block.stmts = new_stmts;
+
+    lock_fn.block = block;
+    lock_fn
 }
 
 pub(crate) fn task_trait_check_fn_name(trait_ident: &syn::Ident) -> syn::Ident {
