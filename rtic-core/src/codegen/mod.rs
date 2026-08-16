@@ -56,7 +56,10 @@ impl<'a> CodeGen<'a> {
         let interrupt_free_fn = get_interrupt_free_fn(implementation);
 
         // traits
-        let rtic_traits_mod = get_rtic_traits_mod();
+        let rtic_traits_mod = get_rtic_traits_mod(self.app.args.obs.as_ref());
+
+        // observability declarations (only emitted when `obs` is set)
+        let obs_declarations = generate_obs_declarations(app);
 
         // sub_apps
         let sub_apps = self.generate_sub_apps();
@@ -71,6 +74,9 @@ impl<'a> CodeGen<'a> {
 
                 // if multibin feature is enabled, add the this use statement
                 #use_multibin_shared
+
+                // ================================== observability ===================================
+                #obs_declarations
 
                 // ================================== user includes ====================================
                 #(#user_includes)*
@@ -250,6 +256,69 @@ fn generate_idle_call(idle: Option<&IdleTask>, wfi: Option<TokenStream2>) -> Tok
             }
         }
     }
+}
+
+/// Generate the observability declarations for an app configured with `#[app(obs = ...)]`.
+///
+/// Returns `None` when no observer is configured, in which case no observability
+/// code is emitted at all. When set, this emits, at app module scope:
+///
+/// - `use <obs> as __rtic_obs;` — the user-provided observer type,
+/// - `TaskId`, a `#[repr(u8)]` enum with one variant per task (declaration
+///   order, across all sub-apps/cores), and
+/// - `ResourceId`, a `#[repr(u8)]` enum with one variant per shared resource
+///   (across all sub-apps/cores), with variants derived from the field idents
+///   via UpperCamelCase.
+///
+/// Both enums live at module scope so the generated `rtic_traits` module (and
+/// the hook-call sites in task `exec` bodies and resource proxy locks) can
+/// reference them.
+fn generate_obs_declarations(app: &App) -> Option<TokenStream2> {
+    use heck::ToUpperCamelCase;
+
+    let obs = app.args.obs.as_ref()?;
+
+    let task_variants = app
+        .sub_apps
+        .iter()
+        .flat_map(|sub_app| sub_app.tasks.iter())
+        .map(|task| {
+            let ident = task.name();
+            quote! { #ident }
+        });
+
+    let mut need_non_camel_case_allow = false;
+    let res_variants: Vec<_> = app
+        .sub_apps
+        .iter()
+        .filter_map(|sub_app| sub_app.shared.as_ref())
+        .flat_map(|shared| shared.resources.iter())
+        .map(|resource| {
+            let name = resource.ident.to_string().to_upper_camel_case();
+            if name != resource.ident.to_string() {
+                need_non_camel_case_allow = true;
+            }
+            let variant = format_ident!("{name}");
+            quote! { #variant }
+        })
+        .collect();
+    let non_camel_case_allow = need_non_camel_case_allow
+        .then(|| quote!(#[allow(non_camel_case_types)]));
+
+    Some(quote! {
+        use #obs as __rtic_obs;
+        #[repr(u8)]
+        /// Discriminates the tasks of this application for observability hooks.
+        pub enum TaskId {
+            #(#task_variants,)*
+        }
+        #non_camel_case_allow
+        #[repr(u8)]
+        /// Discriminates the shared resources of this application for observability hooks.
+        pub enum ResourceId {
+            #(#res_variants,)*
+        }
+    })
 }
 
 /// Generates a unique type for some core that is unsafe to create by the uer.
