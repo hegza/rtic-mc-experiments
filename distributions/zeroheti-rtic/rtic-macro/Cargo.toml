@@ -21,3 +21,5 @@ deadline-pass = []
 intc-clic = []
 intc-hetic = []
 intc-edfic = []
+# Writes examples/<bin>_expanded.rs of the expansion, for debugging only.
+debug-expand = ["rtic-core/debug_expand"]

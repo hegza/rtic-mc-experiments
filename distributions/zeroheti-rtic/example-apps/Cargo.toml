@@ -19,6 +19,7 @@ opt-level = "s"
 
 [features]
 default = []
+debug-expand = ["rtic/debug-expand"]
 fpga = ["bsp/fpga"]
 rtl-tb = ["bsp/rtl-tb"]
 ufmt = ["dep:ufmt", "bsp/ufmt"]

@@ -16,6 +16,7 @@ bsp = { package = "zeroheti-bsp", git = "https://github.com/ANurmi/zeroHETI.git"
 
 [features]
 deadline-pass = ["rtic-macro/deadline-pass"]
+debug-expand = ["rtic-macro/debug-expand"]
 fpga = ["bsp/fpga"]
 rtl-tb = ["bsp/rtl-tb"]
 intc-hetic = ["bsp/intc-hetic", "rtic-macro/intc-hetic"]
