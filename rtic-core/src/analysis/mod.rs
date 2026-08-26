@@ -7,7 +7,7 @@ use syn::spanned::Spanned;
 
 use crate::App;
 use crate::parser::SubApp;
-use crate::parser::ast::{HardwareTask, SharedResources};
+use crate::parser::ast::{HardwareTask, SharedElement, SharedResources};
 
 pub struct Analysis {
     pub sub_analysis: Vec<SubAnalysis>,
@@ -65,9 +65,22 @@ fn print_shared_ress(sr: &SharedResources) {
     };
     println!("[RTIC] Shared resources");
     for res in ress {
-        let pi = res.priority;
-        println!("[RTIC] * {:<longest$} @π={pi}", res.ident);
+        print_res_prios(res, longest);
     }
+}
+
+fn print_res_prios(res: &SharedElement, longest: usize) {
+    let mut elems = Vec::new();
+
+    // Push 'pi'
+    elems.push(format!("@π={}", res.priority));
+
+    // Push 'pi_r' if different from 'pi'
+    if res.read_priority != res.priority {
+        elems.push(format!("@πᵣ={}", res.read_priority));
+    }
+
+    println!("[RTIC] * {:<longest$} {}", res.ident, elems.join(" "));
 }
 
 #[derive(Debug)]
