@@ -104,11 +104,11 @@ fn observability_trait() -> TokenStream2 {
         pub trait #obs_trait {
             /// Task activation: the task's job has started executing.
             #[inline(always)]
-            fn on_task_act(task: TaskId) {}
+            fn on_task_act(task: TaskId, task_prio: u16) {}
 
             /// Task completion: the task's job has finished executing.
             #[inline(always)]
-            fn on_task_comp(task: TaskId) {}
+            fn on_task_comp(task: TaskId, task_prio: u16) {}
 
             /// Resource acquire (lock): entering the SRP critical section,
             /// before the interrupt ceiling is raised.

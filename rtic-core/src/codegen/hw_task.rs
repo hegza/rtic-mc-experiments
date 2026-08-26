@@ -66,6 +66,7 @@ impl RticTask {
     /// their `exec` body cannot be wrapped at this level.
     fn wrap_exec_with_obs(&self) -> Option<syn::ItemImpl> {
         let task_name = self.name();
+        let task_prio = self.args.priority;
         let mut wrapped = self.struct_impl.clone()?;
         wrapped.items.iter_mut().for_each(|item| {
             if let ImplItem::Fn(f) = item {
@@ -73,9 +74,9 @@ impl RticTask {
                     let body = &f.block;
                     f.block = parse_quote! {
                         {
-                            <__rtic_obs as RticObservability>::on_task_act(TaskId::#task_name);
+                            <__rtic_obs as RticObservability>::on_task_act(TaskId::#task_name, #task_prio);
                             #body
-                            <__rtic_obs as RticObservability>::on_task_comp(TaskId::#task_name);
+                            <__rtic_obs as RticObservability>::on_task_comp(TaskId::#task_name, #task_prio);
                         }
                     };
                 }
