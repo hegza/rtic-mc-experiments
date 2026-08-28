@@ -9,6 +9,7 @@ test = false
 bench = false
 
 [dependencies]
+rtic-observability = { path = "../../rtic-observability" }
 rtic-macro = { path = "rtic-macro" }
 rtic-sw-pass = { path = "../../compilation_passes/rtic-sw-pass", default-features = false }
 rtic-deadline-pass = { path = "../../compilation_passes/rtic-deadline-pass", default-features = false }
