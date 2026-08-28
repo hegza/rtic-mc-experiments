@@ -264,10 +264,14 @@ fn generate_idle_call(idle: Option<&IdleTask>, wfi: Option<TokenStream2>) -> Tok
 ///
 /// - `use <obs> as __rtic_obs;` — the user-provided observer type,
 /// - `TaskId`, a `#[repr(u8)]` enum with one variant per task (declaration
-///   order, across all sub-apps/cores), and
+///   order, across all sub-apps/cores),
 /// - `ResourceId`, a `#[repr(u8)]` enum with one variant per shared resource
 ///   (across all sub-apps/cores), with variants derived from the field idents
-///   via UpperCamelCase.
+///   via UpperCamelCase,
+/// - `task_name(id: u8) -> &'static str`, auto-generated lookup from task
+///   discriminant to the original struct identifier, and
+/// - `res_name(id: u8) -> &'static str`, auto-generated lookup from resource
+///   discriminant to the original field name.
 ///
 /// Both enums live at module scope so the generated `rtic_traits` module (and
 /// the hook-call sites in task `exec` bodies and resource proxy locks) can
@@ -277,14 +281,15 @@ fn generate_obs_declarations(app: &App) -> Option<TokenStream2> {
 
     let obs = app.args.obs.as_ref()?;
 
-    let task_variants = app
+    let task_variants: Vec<_> = app
         .sub_apps
         .iter()
         .flat_map(|sub_app| sub_app.tasks.iter())
         .map(|task| {
             let ident = task.name();
             quote! { #ident }
-        });
+        })
+        .collect();
 
     let mut need_non_camel_case_allow = false;
     let res_variants: Vec<_> = app
@@ -304,6 +309,28 @@ fn generate_obs_declarations(app: &App) -> Option<TokenStream2> {
     let non_camel_case_allow =
         need_non_camel_case_allow.then(|| quote!(#[allow(non_camel_case_types)]));
 
+    // Collect task names and resource names for the generated lookup functions.
+    let task_names: Vec<_> = app
+        .sub_apps
+        .iter()
+        .flat_map(|sub_app| sub_app.tasks.iter())
+        .map(|task| {
+            let name = task.name().to_string();
+            quote! { #name }
+        })
+        .collect();
+
+    let res_names: Vec<_> = app
+        .sub_apps
+        .iter()
+        .filter_map(|sub_app| sub_app.shared.as_ref())
+        .flat_map(|shared| shared.resources.iter())
+        .map(|resource| {
+            let name = resource.ident.to_string();
+            quote! { #name }
+        })
+        .collect();
+
     Some(quote! {
         use #obs as __rtic_obs;
         #[repr(u8)]
@@ -316,6 +343,22 @@ fn generate_obs_declarations(app: &App) -> Option<TokenStream2> {
         /// Discriminates the shared resources of this application for observability hooks.
         pub enum ResourceId {
             #(#res_variants,)*
+        }
+
+        /// Returns the human-readable name for a task given its numeric id.
+        pub fn task_name(id: u8) -> &'static str {
+            #(
+                if id == TaskId::#task_variants as u8 { return #task_names; }
+            )*
+            "?"
+        }
+
+        /// Returns the human-readable name for a shared resource given its numeric id.
+        pub fn res_name(id: u8) -> &'static str {
+            #(
+                if id == ResourceId::#res_variants as u8 { return #res_names; }
+            )*
+            "?"
         }
     })
 }
