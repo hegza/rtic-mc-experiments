@@ -110,13 +110,13 @@ fn wrap_lock_fn_with_obs(
 
     let mut new_stmts = stmts;
     new_stmts.push(parse_quote! {
-        <__rtic_obs as RticObservability>::on_res_acq(ResourceId::#res_variant, task_priority, CEILING);
+        <__rtic_obs as RticObservability>::on_res_acq(ResourceId::#res_variant as u8, task_priority, CEILING);
     });
     new_stmts.push(parse_quote! {
         let __rtic_obs_result = { #(#backend_stmts)* };
     });
     new_stmts.push(parse_quote! {
-        <__rtic_obs as RticObservability>::on_res_rel(ResourceId::#res_variant, task_priority, CEILING);
+        <__rtic_obs as RticObservability>::on_res_rel(ResourceId::#res_variant as u8, task_priority, CEILING);
     });
     // unwritten as a `Stmt` (which requires a trailing `;`); keep it as a
     // semicolon-free expression statement so the captured `R` value flows out.

@@ -74,9 +74,9 @@ impl RticTask {
                     let body = &f.block;
                     f.block = parse_quote! {
                         {
-                            <__rtic_obs as RticObservability>::on_task_act(TaskId::#task_name, #task_prio);
+                            <__rtic_obs as RticObservability>::on_task_act(TaskId::#task_name as u8, #task_prio);
                             #body
-                            <__rtic_obs as RticObservability>::on_task_comp(TaskId::#task_name, #task_prio);
+                            <__rtic_obs as RticObservability>::on_task_comp(TaskId::#task_name as u8, #task_prio);
                         }
                     };
                 }
