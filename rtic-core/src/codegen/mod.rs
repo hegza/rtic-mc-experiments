@@ -332,7 +332,7 @@ fn generate_obs_declarations(app: &App) -> Option<TokenStream2> {
         .collect();
 
     Some(quote! {
-        use #obs as __rtic_obs;
+        type __rtic_obs = #obs;
         #[repr(u8)]
         /// Discriminates the tasks of this application for observability hooks.
         pub enum TaskId {
