@@ -22,6 +22,9 @@ pub use bsp::riscv::interrupt::machine::{
     disable as interrupt_disable, enable as interrupt_enable,
 };
 
+use bsp::obs_trace::Obs as obs;
+use rtic_observability::RticObservability;
+
 /// Lock implementation using threshold and global Critical Section (CS)
 ///
 /// # Safety
@@ -48,7 +51,14 @@ pub unsafe fn lock<T, R>(
     // Save mintthresh
     let current = mintthresh::write((ceiling as usize).into());
 
+    // Call the observability hook right after entering the critical section
+    const PLACEHOLDER: u8 = 0;
+    obs::on_res_acq(PLACEHOLDER, _task_priority as u16, ceiling as u16);
+
     let r = f(unsafe { &mut *ptr });
+
+    // Call the observability hook right before leaving the critical section
+    obs::on_res_rel(PLACEHOLDER, _task_priority as u16, current as u16);
 
     // Restore mintthresh
     mintthresh::write((current as usize).into());
